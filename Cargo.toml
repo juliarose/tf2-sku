@@ -1,0 +1,17 @@
+[package]
+name = "marketplace_sku"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tf2-enum = { path = "../tf2-enum", version = "0" }
+thiserror = "1.0.30"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "string_conversions"
+harness = false

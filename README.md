@@ -1,0 +1,5 @@
+# marketplace-sku
+
+## License
+
+MIT
