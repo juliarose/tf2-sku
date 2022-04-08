@@ -2,18 +2,10 @@ pub use tf2_enum;
 
 use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker};
 use thiserror::Error;
+use std::fmt;
 use std::num::ParseIntError;
 use std::convert::TryFrom;
-
-#[derive(Error, Debug)]
-pub enum ParseError {
-    #[error("{}", .0)]
-    ParseInt(#[from] ParseIntError),
-    #[error("Invalid SKU format")]
-    InvalidFormat,
-    #[error("Invalid value: {}", .0)]
-    InvalidValue(String),
-}
+use serde::{Serialize, Serializer, de::{self, Visitor}};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MarketplaceSKU {
@@ -60,6 +52,115 @@ impl MarketplaceSKU {
             sheen: None,
             killstreaker: None,
         }
+    }
+}
+
+impl Serialize for MarketplaceSKU {
+    
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> de::Deserialize<'de> for MarketplaceSKU {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct SKUVisitor;
+
+        impl<'de> Visitor<'de> for SKUVisitor {
+            type Value = MarketplaceSKU;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "a string")
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Self::Value::try_from(s).map_err(de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(SKUVisitor)
+    }
+}
+
+impl fmt::Display for MarketplaceSKU {
+
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut string = format!("{};{}", self.defindex, u8::from(self.quality.clone()));
+            
+        if let Some(particle) = &self.particle {
+            string.push_str(&format!(";u{}", particle));
+        }
+        
+        if !self.craftable {
+            string.push_str(";uncraftable");
+        }
+        
+        if self.australium {
+            string.push_str(";australium");
+        }
+        
+        if self.strange {
+            string.push_str(";strange");
+        }
+        
+        if let Some(wear) = &self.wear {
+            string.push_str(&format!(";w{}", u8::from(wear.clone())));
+        }
+        
+        if let Some(skin) = &self.skin {
+            string.push_str(&format!(";pk{}", skin));
+        }
+        
+        if let Some(killstreak_tier) = &self.killstreak_tier {
+            string.push_str(&format!(";kt-{}", u8::from(killstreak_tier.clone())));
+        }
+        
+        if self.festivized {
+            string.push_str(";festive");
+        }
+
+        if let Some(crate_number) = &self.crate_number {
+            string.push_str(&format!(";c{}", crate_number));
+        }
+
+        if let Some(craft_number) = &self.craft_number {
+            string.push_str(&format!(";c{}", craft_number));
+        }
+
+        if let Some(target_defindex) = &self.target_defindex {
+            string.push_str(&format!(";td-{}", target_defindex));
+        }
+
+        if let Some(output_defindex) = &self.output_defindex {
+            string.push_str(&format!(";od-{}", output_defindex));
+        }
+
+        if let Some(output_quality) = &self.output_quality {
+            string.push_str(&format!(";oq-{}", u8::from(output_quality.clone())));
+        }
+
+        if let Some(sheen) = &self.sheen {
+            string.push_str(&format!(";ks-{}", u8::from(sheen.clone())));
+        }
+
+        if let Some(killstreaker) = &self.killstreaker {
+            string.push_str(&format!(";ke-{}", u32::from(killstreaker.clone())));
+        }
+
+        if let Some(paint) = &self.paint {
+            string.push_str(&format!(";p{}", u32::from(paint.clone())));
+        }
+
+        write!(f, "{}", string)
     }
 }
 
@@ -142,9 +243,26 @@ where T:
     Ok(value)
 }
 
+#[derive(Error, Debug)]
+pub enum ParseError {
+    #[error("{}", .0)]
+    ParseInt(#[from] ParseIntError),
+    #[error("Invalid SKU format")]
+    InvalidFormat,
+    #[error("Invalid value: {}", .0)]
+    InvalidValue(String),
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::Deserialize;
+    use serde_json::{self, json};
+
+    #[derive(Serialize, Deserialize)]
+    struct Item {
+        sku: MarketplaceSKU,
+    }
     
     #[test]
     fn golden_frying_pan_correct() {
@@ -191,5 +309,23 @@ mod tests {
     #[test]
     fn paint_kit_correct() {
         assert!(MarketplaceSKU::try_from("16310;15;u703;w2;pk310").is_ok());
+    }
+
+    #[test]
+    fn deserializes_from_json() {
+
+        let item = serde_json::from_value::<Item>(json!({
+            "sku": "16310;15;u703;w2;pk310"
+        })).unwrap();
+
+        assert_eq!(item.sku.defindex, 16310);
+    }
+    
+    #[test]
+    fn deserializes_to_json() {
+        let sku = MarketplaceSKU::try_from("16310;15;u703;w2;pk310").unwrap();
+        let s = serde_json::to_string(&Item { sku }).unwrap();
+
+        assert_eq!(s, r#"{"sku":"16310;15;u703;w2;pk310"}"#);
     }
 }
