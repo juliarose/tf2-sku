@@ -1,11 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use marketplace_sku::MarketplaceSKU;
+use marketplace_sku::SKU;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let australium = "16310;15;u703;w2;pk310";
+    let sku_str = "16310;15;u703;w2;pk310";
     
-    c.bench_function("australium", |b| b.iter(||
-        MarketplaceSKU::try_from(australium)
+    c.bench_function("parses_sku", |b| b.iter(||
+        SKU::try_from(sku_str)
     ));
 }
 

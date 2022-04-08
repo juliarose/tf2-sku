@@ -8,7 +8,7 @@ use std::convert::TryFrom;
 use serde::{Serialize, Serializer, de::{self, Visitor}};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct MarketplaceSKU {
+pub struct SKU {
     pub defindex: u32,
     pub quality: Quality,
     pub australium: bool,
@@ -29,7 +29,7 @@ pub struct MarketplaceSKU {
     pub killstreaker: Option<Killstreaker>,
 }
 
-impl MarketplaceSKU {
+impl SKU {
     
     fn new(defindex: u32, quality: Quality) -> Self {
         Self {
@@ -55,7 +55,7 @@ impl MarketplaceSKU {
     }
 }
 
-impl Serialize for MarketplaceSKU {
+impl Serialize for SKU {
     
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -65,7 +65,7 @@ impl Serialize for MarketplaceSKU {
     }
 }
 
-impl<'de> de::Deserialize<'de> for MarketplaceSKU {
+impl<'de> de::Deserialize<'de> for SKU {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -73,7 +73,7 @@ impl<'de> de::Deserialize<'de> for MarketplaceSKU {
         struct SKUVisitor;
 
         impl<'de> Visitor<'de> for SKUVisitor {
-            type Value = MarketplaceSKU;
+            type Value = SKU;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 write!(formatter, "a string")
@@ -91,7 +91,7 @@ impl<'de> de::Deserialize<'de> for MarketplaceSKU {
     }
 }
 
-impl fmt::Display for MarketplaceSKU {
+impl fmt::Display for SKU {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut string = format!("{};{}", self.defindex, u8::from(self.quality.clone()));
@@ -164,7 +164,7 @@ impl fmt::Display for MarketplaceSKU {
     }
 }
 
-impl TryFrom<&str> for MarketplaceSKU {
+impl TryFrom<&str> for SKU {
     type Error = ParseError;
     
     fn try_from(sku: &str) -> Result<Self, Self::Error> {
@@ -173,7 +173,7 @@ impl TryFrom<&str> for MarketplaceSKU {
         let defindex = defindex_str.parse::<u32>()?;
         let quality_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
         let quality = parse_enum_u8::<Quality>(quality_str)?;
-        let mut parsed = MarketplaceSKU::new(defindex, quality);
+        let mut parsed = SKU::new(defindex, quality);
         
         for element in sku_split {
             parse_sku_element(&mut parsed, element)?;
@@ -183,7 +183,7 @@ impl TryFrom<&str> for MarketplaceSKU {
     }
 }
 
-fn parse_sku_element(parsed: &mut MarketplaceSKU, element: &str) -> Result<(), ParseError> {
+fn parse_sku_element(parsed: &mut SKU, element: &str) -> Result<(), ParseError> {
     let mut split_at = element.len();
     
     for c in element.chars().rev() {
@@ -261,12 +261,12 @@ mod tests {
 
     #[derive(Serialize, Deserialize)]
     struct Item {
-        sku: MarketplaceSKU,
+        sku: SKU,
     }
     
     #[test]
     fn golden_frying_pan_correct() {
-        assert_eq!(MarketplaceSKU::try_from("1071;11;kt-3").unwrap(), MarketplaceSKU {
+        assert_eq!(SKU::try_from("1071;11;kt-3").unwrap(), SKU {
             defindex: 1071,
             quality: Quality::Strange,
             australium: false,
@@ -290,7 +290,7 @@ mod tests {
     
     #[test]
     fn professional_killstreak_skin() {
-        let sku = MarketplaceSKU::try_from("424;15;u703;w3;pk307;kt-3;ks-1;ke-2008").unwrap();
+        let sku = SKU::try_from("424;15;u703;w3;pk307;kt-3;ks-1;ke-2008").unwrap();
         
         assert_eq!(sku.killstreaker, Some(Killstreaker::HypnoBeam));
         assert_eq!(sku.sheen, Some(Sheen::TeamShine));
@@ -298,17 +298,17 @@ mod tests {
     
     #[test]
     fn bad_quality_is_err() {
-        assert!(MarketplaceSKU::try_from("1071;122").is_err());
+        assert!(SKU::try_from("1071;122").is_err());
     }
     
     #[test]
     fn negative_defindex_is_err() {
-        assert!(MarketplaceSKU::try_from("-1;11").is_err());
+        assert!(SKU::try_from("-1;11").is_err());
     }
     
     #[test]
     fn paint_kit_correct() {
-        assert!(MarketplaceSKU::try_from("16310;15;u703;w2;pk310").is_ok());
+        assert!(SKU::try_from("16310;15;u703;w2;pk310").is_ok());
     }
 
     #[test]
@@ -323,7 +323,7 @@ mod tests {
     
     #[test]
     fn deserializes_to_json() {
-        let sku = MarketplaceSKU::try_from("16310;15;u703;w2;pk310").unwrap();
+        let sku = SKU::try_from("16310;15;u703;w2;pk310").unwrap();
         let s = serde_json::to_string(&Item { sku }).unwrap();
 
         assert_eq!(s, r#"{"sku":"16310;15;u703;w2;pk310"}"#);
