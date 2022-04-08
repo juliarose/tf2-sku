@@ -9,7 +9,8 @@ use serde::{Serialize, Serializer, de::{self, Visitor}};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SKU {
-    pub defindex: u32,
+    // This can be expected to be negative.
+    pub defindex: i32,
     pub quality: Quality,
     pub australium: bool,
     pub craftable: bool,
@@ -31,7 +32,7 @@ pub struct SKU {
 
 impl SKU {
     
-    fn new(defindex: u32, quality: Quality) -> Self {
+    fn new(defindex: i32, quality: Quality) -> Self {
         Self {
             defindex,
             quality,
@@ -170,7 +171,7 @@ impl TryFrom<&str> for SKU {
     fn try_from(sku: &str) -> Result<Self, Self::Error> {
         let mut sku_split = sku.split(';');
         let defindex_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
-        let defindex = defindex_str.parse::<u32>()?;
+        let defindex = defindex_str.parse::<i32>()?;
         let quality_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
         let quality = parse_enum_u8::<Quality>(quality_str)?;
         let mut parsed = SKU::new(defindex, quality);
@@ -302,8 +303,8 @@ mod tests {
     }
     
     #[test]
-    fn negative_defindex_is_err() {
-        assert!(SKU::try_from("-1;11").is_err());
+    fn negative_defindex_is_ok() {
+        assert!(SKU::try_from("-1;11").is_ok());
     }
     
     #[test]
