@@ -20,11 +20,11 @@ pub struct SKU {
     pub killstreak_tier: Option<KillstreakTier>,
     pub wear: Option<Wear>,
     pub skin: Option<u32>,
-    pub craft_number: Option<u32>,
-    pub crate_number: Option<u32>,
     pub target_defindex: Option<u32>,
     pub output_defindex: Option<u32>,
     pub output_quality: Option<Quality>,
+    pub craft_number: Option<u32>,
+    pub crate_number: Option<u32>,
     pub paint: Option<Paint>,
     pub sheen: Option<Sheen>,
     pub killstreaker: Option<Killstreaker>,
@@ -44,15 +44,23 @@ impl SKU {
             killstreak_tier: None,
             wear: None,
             skin: None,
-            craft_number: None,
-            crate_number: None,
             target_defindex: None,
             output_defindex: None,
             output_quality: None,
+            craft_number: None,
+            crate_number: None,
             paint: None,
             sheen: None,
             killstreaker: None,
         }
+    }
+    
+    /// Removes attributes that do not belong to an item's base SKU. These include paint,
+    /// killstreaker, and sheen.
+    pub fn remove_extras(&mut self) {
+        self.paint = None;
+        self.sheen = None;
+        self.killstreaker = None;
     }
 }
 
@@ -134,7 +142,7 @@ impl fmt::Display for SKU {
         }
 
         if let Some(craft_number) = &self.craft_number {
-            string.push_str(&format!(";c{}", craft_number));
+            string.push_str(&format!(";n{}", craft_number));
         }
 
         if let Some(target_defindex) = &self.target_defindex {
@@ -149,16 +157,16 @@ impl fmt::Display for SKU {
             string.push_str(&format!(";oq-{}", u8::from(output_quality.clone())));
         }
 
+        if let Some(paint) = &self.paint {
+            string.push_str(&format!(";p{}", u32::from(paint.clone())));
+        }
+
         if let Some(sheen) = &self.sheen {
             string.push_str(&format!(";ks-{}", u8::from(sheen.clone())));
         }
 
         if let Some(killstreaker) = &self.killstreaker {
             string.push_str(&format!(";ke-{}", u32::from(killstreaker.clone())));
-        }
-
-        if let Some(paint) = &self.paint {
-            string.push_str(&format!(";p{}", u32::from(paint.clone())));
         }
 
         write!(f, "{}", string)
