@@ -103,10 +103,13 @@ impl<'de> de::Deserialize<'de> for SKU {
 impl fmt::Display for SKU {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut string = format!("{};{}", self.defindex, u8::from(self.quality.clone()));
+        let mut string = self.defindex.to_string() + ";";
+        
+        string.push_str(&(*&self.quality as u8).to_string());
             
         if let Some(particle) = &self.particle {
-            string.push_str(&format!(";u{}", particle));
+            string.push_str(";u");
+            string.push_str(&particle.to_string());
         }
         
         if !self.craftable {
@@ -122,15 +125,18 @@ impl fmt::Display for SKU {
         }
         
         if let Some(wear) = &self.wear {
-            string.push_str(&format!(";w{}", u8::from(wear.clone())));
+            string.push_str(";w");
+            string.push_str(&(*wear as u8).to_string());
         }
         
         if let Some(skin) = &self.skin {
-            string.push_str(&format!(";pk{}", skin));
+            string.push_str(";pk");
+            string.push_str(&skin.to_string());
         }
         
         if let Some(killstreak_tier) = &self.killstreak_tier {
-            string.push_str(&format!(";kt-{}", u8::from(killstreak_tier.clone())));
+            string.push_str(";kt-");
+            string.push_str(&(*killstreak_tier as u8).to_string());
         }
         
         if self.festivized {
@@ -138,35 +144,43 @@ impl fmt::Display for SKU {
         }
 
         if let Some(crate_number) = &self.crate_number {
-            string.push_str(&format!(";c{}", crate_number));
+            string.push_str(";c");
+            string.push_str(&crate_number.to_string());
         }
 
         if let Some(craft_number) = &self.craft_number {
-            string.push_str(&format!(";n{}", craft_number));
+            string.push_str(";n");
+            string.push_str(&craft_number.to_string());
         }
 
         if let Some(target_defindex) = &self.target_defindex {
-            string.push_str(&format!(";td-{}", target_defindex));
+            string.push_str(";td-");
+            string.push_str(&target_defindex.to_string());
         }
 
         if let Some(output_defindex) = &self.output_defindex {
-            string.push_str(&format!(";od-{}", output_defindex));
+            string.push_str(";od-");
+            string.push_str(&output_defindex.to_string());
         }
 
         if let Some(output_quality) = &self.output_quality {
-            string.push_str(&format!(";oq-{}", u8::from(output_quality.clone())));
+            string.push_str(";oq-");
+            string.push_str(&(*output_quality as u8).to_string());
         }
 
         if let Some(paint) = &self.paint {
-            string.push_str(&format!(";p{}", u32::from(paint.clone())));
+            string.push_str(";p");
+            string.push_str(&(*paint as u32).to_string());
         }
 
         if let Some(sheen) = &self.sheen {
-            string.push_str(&format!(";ks-{}", u8::from(sheen.clone())));
+            string.push_str(";ks-");
+            string.push_str(&(*sheen as u8).to_string());
         }
 
         if let Some(killstreaker) = &self.killstreaker {
-            string.push_str(&format!(";ke-{}", u32::from(killstreaker.clone())));
+            string.push_str(";ke-");
+            string.push_str(&(*killstreaker as u32).to_string());
         }
 
         write!(f, "{}", string)
