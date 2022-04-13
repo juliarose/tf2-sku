@@ -1,4 +1,4 @@
-# marketplace-sku
+# tf2-sku
 
 ## License
 
