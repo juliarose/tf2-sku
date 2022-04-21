@@ -105,7 +105,7 @@ impl fmt::Display for SKU {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut string = self.defindex.to_string() + ";";
         
-        string.push_str(&(*&self.quality as u8).to_string());
+        string.push_str(&(self.quality as u8).to_string());
             
         if let Some(particle) = &self.particle {
             string.push_str(";u");
