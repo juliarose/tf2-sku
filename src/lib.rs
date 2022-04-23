@@ -9,7 +9,7 @@ use serde::{Serialize, Serializer, de::{self, Visitor}};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SKU {
-    // This can be expected to be negative.
+    /// This can be expected to be negative.
     pub defindex: i32,
     pub quality: Quality,
     pub australium: bool,
@@ -195,7 +195,7 @@ impl TryFrom<&str> for SKU {
         let defindex_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
         let defindex = defindex_str.parse::<i32>()?;
         let quality_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
-        let quality = parse_enum_u8::<Quality>(quality_str)?;
+        let quality = parse_enum_u32::<Quality>(quality_str)?;
         let mut parsed = SKU::new(defindex, quality);
         
         for element in sku_split {
@@ -221,19 +221,19 @@ fn parse_sku_element(parsed: &mut SKU, element: &str) -> Result<(), ParseError> 
     
     match name {
         "u" => parsed.particle = Some(value.parse::<u32>()?),
-        "kt-" => parsed.killstreak_tier = Some(parse_enum_u8::<KillstreakTier>(value)?),
+        "kt-" => parsed.killstreak_tier = Some(parse_enum_u32::<KillstreakTier>(value)?),
         "uncraftable" => parsed.craftable = false,
         "australium" => parsed.australium = true,
         "strange" => parsed.strange = true,
         "festive" => parsed.festivized = true,
-        "w" => parsed.wear = Some(parse_enum_u8::<Wear>(value)?),
+        "w" => parsed.wear = Some(parse_enum_u32::<Wear>(value)?),
         "pk" => parsed.skin = Some(value.parse::<u32>()?),
         "n" => parsed.craft_number = Some(value.parse::<u32>()?),
         "c" => parsed.crate_number = Some(value.parse::<u32>()?),
         "td-" => parsed.target_defindex = Some(value.parse::<u32>()?),
         "od-" => parsed.output_defindex = Some(value.parse::<u32>()?),
-        "oq-" => parsed.output_quality = Some(parse_enum_u8::<Quality>(value)?),
-        "ks-" => parsed.sheen = Some(parse_enum_u8::<Sheen>(value)?),
+        "oq-" => parsed.output_quality = Some(parse_enum_u32::<Quality>(value)?),
+        "ks-" => parsed.sheen = Some(parse_enum_u32::<Sheen>(value)?),
         "ke-" => parsed.killstreaker = Some(parse_enum_u32::<Killstreaker>(value)?),
         "p" => parsed.paint = Some(parse_enum_u32::<Paint>(value)?),
         _ => {},
@@ -248,18 +248,6 @@ where T:
     <T as TryFrom<u32>>::Error: ToString,
 {
     let parsed = s.parse::<u32>()?;
-    let value = T::try_from(parsed)
-        .map_err(|e| ParseError::InvalidValue(e.to_string()))?;
-    
-    Ok(value)
-}
-
-fn parse_enum_u8<T>(s: &str) -> Result<T, ParseError>
-where T:
-    TryFrom<u8> + std::fmt::Display,
-    <T as TryFrom<u8>>::Error: ToString,
-{
-    let parsed = s.parse::<u8>()?;
     let value = T::try_from(parsed)
         .map_err(|e| ParseError::InvalidValue(e.to_string()))?;
     
