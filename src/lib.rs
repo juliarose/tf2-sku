@@ -32,7 +32,7 @@ pub struct SKU {
 
 impl SKU {
     
-    fn new(defindex: i32, quality: Quality) -> Self {
+    pub fn new(defindex: i32, quality: Quality) -> Self {
         Self {
             defindex,
             quality,
