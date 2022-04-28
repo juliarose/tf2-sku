@@ -1,14 +1,18 @@
 [package]
 name = "tf2-sku"
+description = "For parsing attributes from SKU strings."
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Julia"]
+homepage = "https://github.com/juliarose/tf2-sku"
+repository = "https://github.com/juliarose/tf2-sku"
+license = "MIT"
+keywords = ["tf2", "steam"]
+readme = "README.md"
 
 [dependencies]
 tf2-enum = { path = "../tf2-enum", version = "0" }
-thiserror = "1.0.30"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 criterion = "0.3"

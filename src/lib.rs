@@ -1,7 +1,6 @@
 pub use tf2_enum;
 
 use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker};
-use thiserror::Error;
 use std::fmt;
 use std::num::ParseIntError;
 use std::convert::TryFrom;
@@ -259,17 +258,34 @@ where T:
 }
 
 /// An error when parsing from a string.
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum ParseError {
     /// An integer failed to fit into the target type.
-    #[error("{}", .0)]
-    ParseInt(#[from] ParseIntError),
+    ParseInt(ParseIntError),
     /// The SKU format is not valid.
-    #[error("Invalid SKU format")]
     InvalidFormat,
     /// An attrbiute value is not valid.
-    #[error("Invalid value: {}", .0)]
     InvalidValue(String),
+}
+
+impl std::error::Error for ParseError {}
+
+impl From<ParseIntError> for ParseError {
+    
+    fn from(error: ParseIntError) -> Self {
+        Self::ParseInt(error)
+    }
+}
+
+impl fmt::Display for ParseError {
+    
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseError::ParseInt(error) => write!(f, "{}", error),
+            ParseError::InvalidFormat => write!(f, "Invalid SKU format"),
+            ParseError::InvalidValue(value) => write!(f, "Invalid value: {}", value),
+        }
+    }
 }
 
 impl Serialize for SKU {
