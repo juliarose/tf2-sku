@@ -305,7 +305,7 @@ impl<'de> de::Deserialize<'de> for SKU {
 
 fn parse_enum_u32<T>(s: &str) -> Result<T, ParseError>
 where T:
-    TryFrom<u32> + std::fmt::Display,
+    TryFrom<u32> + fmt::Display,
     <T as TryFrom<u32>>::Error: ToString,
 {
     let parsed = s.parse::<u32>()?;
