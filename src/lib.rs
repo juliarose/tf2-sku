@@ -34,7 +34,15 @@ pub struct SKU {
 impl SKU {
     
     /// Creates a new SKU using the given defindex and quality. All other fields will be `None` or 
-    /// falsy with the exception of craftable, which is `true`. 
+    /// `false` with the exception of craftable, which is `true`. 
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_sku::{SKU, tf2_enum::Quality};
+    /// 
+    /// SKU::new(264, Quality::Strange);
+    /// ```
     pub fn new(
         defindex: i32,
         quality: Quality,
