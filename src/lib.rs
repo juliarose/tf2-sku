@@ -105,7 +105,7 @@ impl fmt::Display for SKU {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut string = self.defindex.to_string() + ";";
         
-        string.push_str(&(self.quality as u8).to_string());
+        string.push_str(&(self.quality as u32).to_string());
             
         if let Some(particle) = &self.particle {
             string.push_str(";u");
@@ -126,7 +126,7 @@ impl fmt::Display for SKU {
         
         if let Some(wear) = &self.wear {
             string.push_str(";w");
-            string.push_str(&(*wear as u8).to_string());
+            string.push_str(&(*wear as u32).to_string());
         }
         
         if let Some(skin) = &self.skin {
@@ -136,7 +136,7 @@ impl fmt::Display for SKU {
         
         if let Some(killstreak_tier) = &self.killstreak_tier {
             string.push_str(";kt-");
-            string.push_str(&(*killstreak_tier as u8).to_string());
+            string.push_str(&(*killstreak_tier as u32).to_string());
         }
         
         if self.festivized {
@@ -165,7 +165,7 @@ impl fmt::Display for SKU {
 
         if let Some(output_quality) = &self.output_quality {
             string.push_str(";oq-");
-            string.push_str(&(*output_quality as u8).to_string());
+            string.push_str(&(*output_quality as u32).to_string());
         }
 
         if let Some(paint) = &self.paint {
@@ -175,7 +175,7 @@ impl fmt::Display for SKU {
 
         if let Some(sheen) = &self.sheen {
             string.push_str(";ks-");
-            string.push_str(&(*sheen as u8).to_string());
+            string.push_str(&(*sheen as u32).to_string());
         }
 
         if let Some(killstreaker) = &self.killstreaker {
