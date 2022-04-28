@@ -67,14 +67,6 @@ impl SKU {
             killstreaker: None,
         }
     }
-    
-    /// Converts this SKU into its base SKU. Removing paint, sheen, and killstreaker attributes.
-    pub fn into_base(mut self) -> Self {
-        self.paint = None;
-        self.sheen = None;
-        self.killstreaker = None;
-        self
-    }
 }
 
 /// Formats SKU attributes into a string.
