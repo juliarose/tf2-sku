@@ -78,43 +78,6 @@ impl SKU {
     }
 }
 
-impl Serialize for SKU {
-    
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
-    }
-}
-
-impl<'de> de::Deserialize<'de> for SKU {
-    
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: de::Deserializer<'de>,
-    {
-        struct SKUVisitor;
-
-        impl<'de> Visitor<'de> for SKUVisitor {
-            type Value = SKU;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "a string")
-            }
-
-            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Self::Value::try_from(s).map_err(de::Error::custom)
-            }
-        }
-
-        deserializer.deserialize_str(SKUVisitor)
-    }
-}
-
 /// Formats SKU attributes into a string.
 /// 
 /// # Examples
@@ -307,6 +270,43 @@ pub enum ParseError {
     /// An attrbiute value is not valid.
     #[error("Invalid value: {}", .0)]
     InvalidValue(String),
+}
+
+impl Serialize for SKU {
+    
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> de::Deserialize<'de> for SKU {
+    
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct SKUVisitor;
+
+        impl<'de> Visitor<'de> for SKUVisitor {
+            type Value = SKU;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "a string")
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Self::Value::try_from(s).map_err(de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(SKUVisitor)
+    }
 }
 
 #[cfg(test)]
