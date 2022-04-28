@@ -1,9 +1,7 @@
 pub use tf2_enum;
 
 use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker};
-use std::fmt;
-use std::num::ParseIntError;
-use std::convert::TryFrom;
+use std::{fmt, num::ParseIntError, convert::TryFrom};
 use serde::{Serialize, Serializer, de::{self, Visitor}};
 
 /// Attributes related to a SKU string.
