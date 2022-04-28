@@ -89,6 +89,7 @@ impl Serialize for SKU {
 }
 
 impl<'de> de::Deserialize<'de> for SKU {
+    
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -114,6 +115,19 @@ impl<'de> de::Deserialize<'de> for SKU {
     }
 }
 
+/// Formats SKU attributes into a string.
+/// 
+/// # Examples
+///
+/// ```
+/// use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
+/// 
+/// let mut sku = SKU::new(264, Quality::Strange);
+/// 
+/// sku.killstreak_tier = Some(KillstreakTier::Professional);
+/// 
+/// assert_eq!(&sku.to_string(), "264;11;kt-3");
+/// ```
 impl fmt::Display for SKU {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
