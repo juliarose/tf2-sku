@@ -68,12 +68,12 @@ impl SKU {
         }
     }
     
-    /// Removes attributes that do not belong to an item's base SKU. These include paint,
-    /// killstreaker, and sheen.
-    pub fn remove_extras(&mut self) {
+    /// Converts this SKU into its base SKU. Removing paint, sheen, and killstreaker attributes.
+    pub fn into_base(mut self) -> Self {
         self.paint = None;
         self.sheen = None;
         self.killstreaker = None;
+        self
     }
 }
 
