@@ -237,18 +237,6 @@ fn parse_sku_element(parsed: &mut SKU, element: &str) -> Result<(), ParseError> 
     Ok(())
 }
 
-fn parse_enum_u32<T>(s: &str) -> Result<T, ParseError>
-where T:
-    TryFrom<u32> + std::fmt::Display,
-    <T as TryFrom<u32>>::Error: ToString,
-{
-    let parsed = s.parse::<u32>()?;
-    let value = T::try_from(parsed)
-        .map_err(|e| ParseError::InvalidValue(e.to_string()))?;
-    
-    Ok(value)
-}
-
 /// An error when parsing from a string.
 #[derive(Debug)]
 pub enum ParseError {
@@ -315,6 +303,18 @@ impl<'de> de::Deserialize<'de> for SKU {
 
         deserializer.deserialize_str(SKUVisitor)
     }
+}
+
+fn parse_enum_u32<T>(s: &str) -> Result<T, ParseError>
+where T:
+    TryFrom<u32> + std::fmt::Display,
+    <T as TryFrom<u32>>::Error: ToString,
+{
+    let parsed = s.parse::<u32>()?;
+    let value = T::try_from(parsed)
+        .map_err(|e| ParseError::InvalidValue(e.to_string()))?;
+    
+    Ok(value)
 }
 
 #[cfg(test)]
