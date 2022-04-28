@@ -7,6 +7,7 @@ use std::num::ParseIntError;
 use std::convert::TryFrom;
 use serde::{Serialize, Serializer, de::{self, Visitor}};
 
+/// Attributes related to a SKU string.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SKU {
     /// This can be expected to be negative.
@@ -32,7 +33,12 @@ pub struct SKU {
 
 impl SKU {
     
-    pub fn new(defindex: i32, quality: Quality) -> Self {
+    /// Creates a new SKU using the given defindex and quality. All other fields will be `None` or 
+    /// falsy with the exception of craftable, which is `true`. 
+    pub fn new(
+        defindex: i32,
+        quality: Quality,
+    ) -> Self {
         Self {
             defindex,
             quality,
@@ -254,12 +260,16 @@ where T:
     Ok(value)
 }
 
+/// An error when parsing from a string.
 #[derive(Error, Debug)]
 pub enum ParseError {
+    /// An integer failed to fit into the target type.
     #[error("{}", .0)]
     ParseInt(#[from] ParseIntError),
+    /// The SKU format is not valid.
     #[error("Invalid SKU format")]
     InvalidFormat,
+    /// An attrbiute value is not valid.
     #[error("Invalid value: {}", .0)]
     InvalidValue(String),
 }
@@ -324,7 +334,6 @@ mod tests {
 
     #[test]
     fn deserializes_from_json() {
-
         let item = serde_json::from_value::<Item>(json!({
             "sku": "16310;15;u703;w2;pk310"
         })).unwrap();
