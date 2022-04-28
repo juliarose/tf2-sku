@@ -12,8 +12,8 @@ pub struct SKU {
     /// This can be expected to be negative.
     pub defindex: i32,
     pub quality: Quality,
-    pub australium: bool,
     pub craftable: bool,
+    pub australium: bool,
     pub strange: bool,
     pub festivized: bool,
     pub particle: Option<u32>,
@@ -49,8 +49,8 @@ impl SKU {
         Self {
             defindex,
             quality,
-            australium: false,
             craftable: true,
+            australium: false,
             strange: false,
             festivized: false,
             particle: None,
@@ -333,8 +333,8 @@ mod tests {
         assert_eq!(SKU::try_from("1071;11;kt-3").unwrap(), SKU {
             defindex: 1071,
             quality: Quality::Strange,
-            australium: false,
             craftable: true,
+            australium: false,
             strange: false,
             festivized: false,
             particle: None,
