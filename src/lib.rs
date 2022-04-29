@@ -238,7 +238,7 @@ fn parse_sku_element(parsed: &mut SKU, element: &str) -> Result<(), ParseError> 
 /// An error when parsing from a string.
 #[derive(Debug)]
 pub enum ParseError {
-    /// An integer failed to fit into the target type.
+    /// An integer failed to parse.
     ParseInt(ParseIntError),
     /// The SKU format is not valid.
     InvalidFormat,
