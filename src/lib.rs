@@ -15,9 +15,9 @@ pub struct SKU {
     pub strange: bool,
     pub festivized: bool,
     pub particle: Option<u32>,
+    pub skin: Option<u32>,
     pub killstreak_tier: Option<KillstreakTier>,
     pub wear: Option<Wear>,
-    pub skin: Option<u32>,
     pub target_defindex: Option<u32>,
     pub output_defindex: Option<u32>,
     pub output_quality: Option<Quality>,
@@ -52,9 +52,9 @@ impl SKU {
             strange: false,
             festivized: false,
             particle: None,
+            skin: None,
             killstreak_tier: None,
             wear: None,
-            skin: None,
             target_defindex: None,
             output_defindex: None,
             output_quality: None,
@@ -67,21 +67,21 @@ impl SKU {
     }
 }
 
+/// Formats SKU attributes into a string.
+/// 
+/// # Examples
+///
+/// ```
+/// use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
+/// 
+/// let mut sku = SKU::new(264, Quality::Strange);
+/// 
+/// sku.killstreak_tier = Some(KillstreakTier::Professional);
+/// 
+/// assert_eq!(&sku.to_string(), "264;11;kt-3");
+/// ```
 impl fmt::Display for SKU {
     
-    /// Formats SKU attributes into a string.
-    /// 
-    /// # Examples
-    ///
-    /// ```
-    /// use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
-    /// 
-    /// let mut sku = SKU::new(264, Quality::Strange);
-    /// 
-    /// sku.killstreak_tier = Some(KillstreakTier::Professional);
-    /// 
-    /// assert_eq!(&sku.to_string(), "264;11;kt-3");
-    /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut string = self.defindex.to_string() + ";";
         
@@ -167,22 +167,22 @@ impl fmt::Display for SKU {
     }
 }
 
+/// Attempts to parse a SKU from a string.
+/// 
+/// # Examples
+///
+/// ```
+/// use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
+/// 
+/// let sku = SKU::try_from("264;11;kt-3").unwrap();
+/// 
+/// assert_eq!(sku.defindex, 264);
+/// assert_eq!(sku.quality, Quality::Strange);
+/// assert_eq!(sku.killstreak_tier, Some(KillstreakTier::Professional));
+/// ```
 impl TryFrom<&str> for SKU {
     type Error = ParseError;
         
-    /// Attempts to parse a SKU from a string.
-    /// 
-    /// # Examples
-    ///
-    /// ```
-    /// use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
-    /// 
-    /// let sku = SKU::try_from("264;11;kt-3").unwrap();
-    /// 
-    /// assert_eq!(sku.defindex, 264);
-    /// assert_eq!(sku.quality, Quality::Strange);
-    /// assert_eq!(sku.killstreak_tier, Some(KillstreakTier::Professional));
-    /// ```
     fn try_from(sku: &str) -> Result<Self, Self::Error> {
         let mut sku_split = sku.split(';');
         let defindex_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
@@ -336,9 +336,9 @@ mod tests {
             strange: false,
             festivized: false,
             particle: None,
+            skin: None,
             killstreak_tier: Some(KillstreakTier::Professional),
             wear: None,
-            skin: None,
             craft_number: None,
             crate_number: None,
             target_defindex: None,
