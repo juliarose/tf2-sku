@@ -1,13 +1,30 @@
+//! # tf2-sku
+//! 
+//! Parses attributes from SKU strings for Team Fortress items.
+//! 
+//! ## Usage
+//!
+//! ```
+//! use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
+//! 
+//! let sku = SKU::try_from("264;11;kt-3").unwrap();
+//! 
+//! assert_eq!(sku.defindex, 264);
+//! assert_eq!(sku.quality, Quality::Strange);
+//! assert_eq!(sku.killstreak_tier, Some(KillstreakTier::Professional));
+//! assert_eq!(sku.to_string(), "264;11;kt-3"));
+//! ```
+
 pub use tf2_enum;
 
 use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker};
 use std::{fmt, num::ParseIntError, convert::TryFrom};
 use serde::{Serialize, Serializer, de::{self, Visitor}};
 
-/// Attributes related to a SKU string.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SKU {
-    /// This can be expected to be negative.
+    /// This can be negative at times to refer to items that are not defined in the schema e.g. 
+    /// Random Craft Hat.
     pub defindex: i32,
     pub quality: Quality,
     pub craftable: bool,
@@ -186,8 +203,8 @@ impl TryFrom<&str> for SKU {
     fn try_from(sku: &str) -> Result<Self, Self::Error> {
         let mut sku_split = sku.split(';');
         let defindex_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
-        let defindex = defindex_str.parse::<i32>()?;
         let quality_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
+        let defindex = defindex_str.parse::<i32>()?;
         let quality = parse_enum_u32::<Quality>(quality_str)?;
         let mut parsed = SKU::new(defindex, quality);
         
