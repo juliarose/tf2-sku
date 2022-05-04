@@ -1,6 +1,6 @@
 //! # tf2-sku
 //! 
-//! Parses attributes from SKU strings for Team Fortress items.
+//! SKU parser for Team Fortress 2 items.
 //! 
 //! ## Usage
 //!

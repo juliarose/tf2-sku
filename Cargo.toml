@@ -1,6 +1,6 @@
 [package]
 name = "tf2-sku"
-description = "Parses attributes from SKU strings for Team Fortress items."
+description = "SKU parser for Team Fortress 2 items."
 version = "0.1.0"
 edition = "2021"
 authors = ["Julia"]
