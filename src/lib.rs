@@ -45,6 +45,13 @@ pub struct SKU {
     pub killstreaker: Option<Killstreaker>,
 }
 
+impl Default for SKU {
+    
+    fn default() -> Self {
+        Self::new(0, Quality::Normal)
+    }
+}
+
 impl SKU {
     
     /// Creates a new SKU using the given defindex and quality. All other fields will be `None` or 
