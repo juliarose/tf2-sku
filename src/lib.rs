@@ -21,6 +21,11 @@ use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker};
 use std::{fmt, num::ParseIntError, convert::TryFrom};
 use serde::{Serialize, Serializer, de::{self, Visitor}};
 
+/// Trait for converting to a SKU string.
+pub trait SKUString {
+    fn to_sku_string(&self) -> String;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SKU {
     /// This can be negative at times to refer to items that are not defined in the schema e.g. 
@@ -53,7 +58,6 @@ impl Default for SKU {
 }
 
 impl SKU {
-    
     /// Creates a new SKU using the given defindex and quality. All other fields will be `None` or 
     /// `false` with the exception of craftable, which is `true`. 
     /// 
@@ -91,6 +95,12 @@ impl SKU {
     }
 }
 
+impl SKUString for SKU {
+    fn to_sku_string(&self) -> String {
+        self.to_string()
+    }
+}
+
 /// Formats SKU attributes into a string.
 /// 
 /// # Examples
@@ -105,7 +115,6 @@ impl SKU {
 /// assert_eq!(&sku.to_string(), "264;11;kt-3");
 /// ```
 impl fmt::Display for SKU {
-    
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut string = self.defindex.to_string() + ";";
         
@@ -273,14 +282,12 @@ pub enum ParseError {
 impl std::error::Error for ParseError {}
 
 impl From<ParseIntError> for ParseError {
-    
     fn from(error: ParseIntError) -> Self {
         Self::ParseInt(error)
     }
 }
 
 impl fmt::Display for ParseError {
-    
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParseError::ParseInt(error) => write!(f, "{}", error),
@@ -291,7 +298,6 @@ impl fmt::Display for ParseError {
 }
 
 impl Serialize for SKU {
-    
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -301,7 +307,6 @@ impl Serialize for SKU {
 }
 
 impl<'de> de::Deserialize<'de> for SKU {
-    
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: de::Deserializer<'de>,
