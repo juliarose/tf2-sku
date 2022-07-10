@@ -26,7 +26,7 @@ pub trait SKUString {
     fn to_sku_string(&self) -> String;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SKU {
     /// This can be negative at times to refer to items that are not defined in the schema e.g. 
     /// Random Craft Hat.
