@@ -12,7 +12,7 @@ readme = "README.md"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-tf2-enum = { path = "../tf2-enum", version = "0" }
+tf2-enum = "^0.5"
 
 [dev-dependencies]
 criterion = "0.3"
