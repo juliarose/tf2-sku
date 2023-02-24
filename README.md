@@ -16,4 +16,4 @@ assert_eq!(sku.killstreak_tier, Some(KillstreakTier::Professional));
 
 ## License
 
-MIT
+[MIT](https://github.com/juliarose/tf2-sku/blob/master/LICENSE)

@@ -7,7 +7,8 @@
 ### Changed
 - Bump `tf2-enum` to `0.6.0`.
 
+## 0.3.0 (2023-02-24)
 
-
-
-
+### Changed
+- Bump `tf2-enum` to `0.8.0`.
+- Better error types/descriptions.

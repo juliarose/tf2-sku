@@ -5,20 +5,24 @@
 //! ## Usage
 //!
 //! ```
-//! use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
+//! use tf2_sku::SKU;
+//! use tf2_sku::tf2_enum::{Quality, KillstreakTier};
 //! 
 //! let sku = SKU::try_from("264;11;kt-3").unwrap();
 //! 
 //! assert_eq!(sku.defindex, 264);
 //! assert_eq!(sku.quality, Quality::Strange);
 //! assert_eq!(sku.killstreak_tier, Some(KillstreakTier::Professional));
-//! assert_eq!(sku.to_string(), "264;11;kt-3"));
+//! assert_eq!(sku.to_string(), "264;11;kt-3");
 //! ```
 
 pub use tf2_enum;
 
+use std::num::{IntErrorKind, ParseIntError};
+use std::fmt;
+use std::convert::TryFrom;
+use tf2_enum::num_enum::{TryFromPrimitive, TryFromPrimitiveError};
 use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker};
-use std::{fmt, num::ParseIntError, convert::TryFrom};
 use serde::{Serialize, Serializer, de::{self, Visitor}};
 
 /// Trait for converting to a SKU string.
@@ -51,7 +55,6 @@ pub struct SKU {
 }
 
 impl Default for SKU {
-    
     fn default() -> Self {
         Self::new(0, Quality::Normal)
     }
@@ -220,11 +223,15 @@ impl TryFrom<&str> for SKU {
         let mut sku_split = sku.split(';');
         let defindex_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
         let quality_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
-        let defindex = defindex_str.parse::<i32>()?;
-        let quality = parse_enum_u32::<Quality>(quality_str)?;
+        let defindex = defindex_str.parse::<i32>()
+            .map_err(|error| ParseError::ParseInt {
+                key: "defindex",
+                error,
+            })?;
+        let quality = parse_enum_u32::<Quality>("quality", quality_str)?;
         let mut parsed = SKU::new(defindex, quality);
         
-        for element in sku_split {
+        while let Some(element) = sku_split.next() {
             parse_sku_element(&mut parsed, element)?;
         }
         
@@ -232,7 +239,7 @@ impl TryFrom<&str> for SKU {
     }
 }
 
-fn parse_sku_element(parsed: &mut SKU, element: &str) -> Result<(), ParseError> {
+fn parse_sku_element<'a>(parsed: &mut SKU, element: &str) -> Result<(), ParseError> {
     let mut split_at = element.len();
     
     for c in element.chars().rev() {
@@ -246,22 +253,22 @@ fn parse_sku_element(parsed: &mut SKU, element: &str) -> Result<(), ParseError> 
     let (name, value) = element.split_at(split_at);
     
     match name {
-        "u" => parsed.particle = Some(value.parse::<u32>()?),
-        "kt-" => parsed.killstreak_tier = Some(parse_enum_u32::<KillstreakTier>(value)?),
+        "u" => parsed.particle = Some(parse_u32("particle", value)?),
+        "kt-" => parsed.killstreak_tier = Some(parse_enum_u32::<KillstreakTier>("killstreak tier", value)?),
         "uncraftable" => parsed.craftable = false,
         "australium" => parsed.australium = true,
         "strange" => parsed.strange = true,
         "festive" => parsed.festivized = true,
-        "w" => parsed.wear = Some(parse_enum_u32::<Wear>(value)?),
-        "pk" => parsed.skin = Some(value.parse::<u32>()?),
-        "n" => parsed.craft_number = Some(value.parse::<u32>()?),
-        "c" => parsed.crate_number = Some(value.parse::<u32>()?),
-        "td-" => parsed.target_defindex = Some(value.parse::<u32>()?),
-        "od-" => parsed.output_defindex = Some(value.parse::<u32>()?),
-        "oq-" => parsed.output_quality = Some(parse_enum_u32::<Quality>(value)?),
-        "ks-" => parsed.sheen = Some(parse_enum_u32::<Sheen>(value)?),
-        "ke-" => parsed.killstreaker = Some(parse_enum_u32::<Killstreaker>(value)?),
-        "p" => parsed.paint = Some(parse_enum_u32::<Paint>(value)?),
+        "w" => parsed.wear = Some(parse_enum_u32::<Wear>("wear", value)?),
+        "pk" => parsed.skin = Some(parse_u32("skin", value)?),
+        "n" => parsed.craft_number = Some(parse_u32("craft number", value)?),
+        "c" => parsed.crate_number = Some(parse_u32("crate number", value)?),
+        "td-" => parsed.target_defindex = Some(parse_u32("target defindex", value)?),
+        "od-" => parsed.output_defindex = Some(parse_u32("output defindex", value)?),
+        "oq-" => parsed.output_quality = Some(parse_enum_u32::<Quality>("output quality", value)?),
+        "ks-" => parsed.sheen = Some(parse_enum_u32::<Sheen>("sheen", value)?),
+        "ke-" => parsed.killstreaker = Some(parse_enum_u32::<Killstreaker>("killstreaker", value)?),
+        "p" => parsed.paint = Some(parse_enum_u32::<Paint>("paint", value)?),
         _ => {},
     }
     
@@ -272,27 +279,41 @@ fn parse_sku_element(parsed: &mut SKU, element: &str) -> Result<(), ParseError> 
 #[derive(Debug)]
 pub enum ParseError {
     /// An integer failed to parse.
-    ParseInt(ParseIntError),
+    ParseInt {
+        key: &'static str,
+        error: ParseIntError,
+    },
     /// The SKU format is not valid.
     InvalidFormat,
-    /// An attrbiute value is not valid.
-    InvalidValue(String),
+    /// An attribute value is not valid.
+    InvalidValue {
+        key: &'static str,
+        number: u32,
+    },
 }
 
 impl std::error::Error for ParseError {}
 
-impl From<ParseIntError> for ParseError {
-    fn from(error: ParseIntError) -> Self {
-        Self::ParseInt(error)
-    }
-}
-
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::ParseInt(error) => write!(f, "{}", error),
-            ParseError::InvalidFormat => write!(f, "Invalid SKU format"),
-            ParseError::InvalidValue(value) => write!(f, "Invalid value: {}", value),
+            ParseError::ParseInt {
+                key,
+                error ,
+            } => match *error.kind() {
+                IntErrorKind::Empty => write!(f, "Value for {key} in SKU is empty."),
+                IntErrorKind::InvalidDigit => write!(f, "Value for {key} in SKU contains invalid digit."),
+                IntErrorKind::PosOverflow => write!(f, "Value for {key} in SKU overflows integer bounds."),
+                IntErrorKind::NegOverflow => write!(f, "Value for {key} in SKU underflows integer bounds."),
+                // shouldn't occur
+                IntErrorKind::Zero => write!(f, "Value for {key} in SKU zero for non-zero type."),
+                _ => write!(f, "Value for {key} in SKU could not be parsed: {error}"),
+            },
+            ParseError::InvalidFormat => write!(f, "Invalid SKU format."),
+            ParseError::InvalidValue {
+                key,
+                number,
+            } => write!(f, "Unknown {key} for `{number}`."),
         }
     }
 }
@@ -319,7 +340,7 @@ impl<'de> de::Deserialize<'de> for SKU {
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 write!(formatter, "a string")
             }
-
+            
             fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
             where
                 E: de::Error,
@@ -332,16 +353,23 @@ impl<'de> de::Deserialize<'de> for SKU {
     }
 }
 
-fn parse_enum_u32<T>(s: &str) -> Result<T, ParseError>
+fn parse_enum_u32<T>(key: &'static str, s: &str) -> Result<T, ParseError>
 where T:
-    TryFrom<u32> + fmt::Display,
-    <T as TryFrom<u32>>::Error: ToString,
+    TryFromPrimitive<Primitive = u32>,
 {
-    let parsed = s.parse::<u32>()?;
-    let value = T::try_from(parsed)
-        .map_err(|e| ParseError::InvalidValue(e.to_string()))?;
-    
-    Ok(value)
+    T::try_from_primitive(parse_u32(key, s)?)
+        .map_err(|TryFromPrimitiveError { number }| ParseError::InvalidValue {
+            key,
+            number,
+        })
+}
+
+fn parse_u32(key: &'static str, value: &str) -> Result<u32, ParseError> {
+    value.parse::<u32>()
+        .map_err(|error| ParseError::ParseInt {
+            key,
+            error,
+        })
 }
 
 #[cfg(test)]
@@ -349,7 +377,7 @@ mod tests {
     use super::*;
     use serde::Deserialize;
     use serde_json::{self, json};
-
+    
     #[derive(Serialize, Deserialize)]
     struct Item {
         sku: SKU,
@@ -380,16 +408,34 @@ mod tests {
     }
     
     #[test]
-    fn professional_killstreak_skin() {
+    fn professional_unusual_killstreak_skin() {
         let sku = SKU::try_from("424;15;u703;w3;pk307;kt-3;ks-1;ke-2008").unwrap();
         
+        assert_eq!(sku.killstreak_tier, Some(KillstreakTier::Professional));
         assert_eq!(sku.killstreaker, Some(Killstreaker::HypnoBeam));
         assert_eq!(sku.sheen, Some(Sheen::TeamShine));
+        assert_eq!(sku.skin, Some(307));
+        assert_eq!(sku.particle, Some(703));
     }
     
     #[test]
     fn bad_quality_is_err() {
         assert!(SKU::try_from("1071;122").is_err());
+    }
+    
+    #[test]
+    fn empty_quality_is_err() {
+        assert!(SKU::try_from("1;5;u;pk1").is_err());
+    }
+    
+    #[test]
+    fn bad_quality_is_err_check_error_key() {
+        if let ParseError::InvalidValue { key, number } = SKU::try_from("1071;122").unwrap_err() {
+            assert_eq!(key, "quality");
+            assert_eq!(number, 122);
+        } else {
+            panic!("wrong error");
+        }
     }
     
     #[test]
