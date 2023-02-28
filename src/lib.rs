@@ -33,7 +33,7 @@ pub trait SKUString {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SKU {
     /// This can be negative at times to refer to items that are not defined in the schema e.g. 
-    /// Random Craft Hat.
+    /// "Random Craft Hat".
     pub defindex: i32,
     pub quality: Quality,
     pub craftable: bool,
@@ -61,15 +61,17 @@ impl Default for SKU {
 }
 
 impl SKU {
-    /// Creates a new SKU using the given defindex and quality. All other fields will be `None` or 
-    /// `false` with the exception of craftable, which is `true`. 
+    /// Creates a new SKU using the given defindex and [`Quality`]. All `Option` fields will be 
+    /// `None`, and all `bool` fields will be `false`, with the exception of craftable, which is 
+    /// `true`. 
     /// 
     /// # Examples
     ///
     /// ```
     /// use tf2_sku::{SKU, tf2_enum::Quality};
     /// 
-    /// SKU::new(264, Quality::Strange);
+    /// let sku = SKU::new(264, Quality::Strange);
+    /// assert_eq!(sku.to_string(), "264;11");
     /// ```
     pub fn new(
         defindex: i32,
@@ -98,12 +100,14 @@ impl SKU {
     }
 }
 
+/// This is the same as `to_string`.
 impl SKUString for SKU {
     fn to_sku_string(&self) -> String {
         self.to_string()
     }
 }
 
+/// This is the same as `to_string`.
 impl SKUString for &SKU {
     fn to_sku_string(&self) -> String {
         self.to_string()
@@ -121,7 +125,7 @@ impl SKUString for &SKU {
 /// 
 /// sku.killstreak_tier = Some(KillstreakTier::Professional);
 /// 
-/// assert_eq!(&sku.to_string(), "264;11;kt-3");
+/// assert_eq!(sku.to_string(), "264;11;kt-3");
 /// ```
 impl fmt::Display for SKU {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -207,7 +211,9 @@ impl fmt::Display for SKU {
     }
 }
 
-/// Attempts to parse a SKU from a string.
+/// Attempts to parse a SKU from a string. Fails if SKU contains invalid attribute e.g. a 
+/// [`Quality`] not defined, `"kt-5"` is an invalid [`KillstreakTier`]. Ignores unknown 
+/// attributes.
 /// 
 /// # Examples
 ///
@@ -225,8 +231,10 @@ impl TryFrom<&str> for SKU {
         
     fn try_from(sku: &str) -> Result<Self, Self::Error> {
         let mut sku_split = sku.split(';');
-        let defindex_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
-        let quality_str = sku_split.next().ok_or(ParseError::InvalidFormat)?;
+        let defindex_str = sku_split.next()
+            .ok_or(ParseError::InvalidFormat)?;
+        let quality_str = sku_split.next()
+            .ok_or(ParseError::InvalidFormat)?;
         let defindex = defindex_str.parse::<i32>()
             .map_err(|error| ParseError::ParseInt {
                 key: "defindex",
@@ -243,9 +251,14 @@ impl TryFrom<&str> for SKU {
     }
 }
 
-fn parse_sku_element<'a>(parsed: &mut SKU, element: &str) -> Result<(), ParseError> {
+/// Parses a single SKU attribute.
+fn parse_sku_element<'a>(
+    parsed: &mut SKU,
+    element: &str,
+) -> Result<(), ParseError> {
     let mut split_at = element.len();
     
+    // Walk back through chars until a non-digit is found
     for c in element.chars().rev() {
         if c.is_digit(10) {
             split_at -= 1;
@@ -254,6 +267,7 @@ fn parse_sku_element<'a>(parsed: &mut SKU, element: &str) -> Result<(), ParseErr
         }
     }
     
+    // Split at the last digit (value will be empty if no digit was found)
     let (name, value) = element.split_at(split_at);
     
     match name {
@@ -273,6 +287,7 @@ fn parse_sku_element<'a>(parsed: &mut SKU, element: &str) -> Result<(), ParseErr
         "ks-" => parsed.sheen = Some(parse_enum_u32::<Sheen>("sheen", value)?),
         "ke-" => parsed.killstreaker = Some(parse_enum_u32::<Killstreaker>("killstreaker", value)?),
         "p" => parsed.paint = Some(parse_enum_u32::<Paint>("paint", value)?),
+        // ignore
         _ => {},
     }
     
@@ -317,7 +332,7 @@ impl fmt::Display for ParseError {
             ParseError::InvalidValue {
                 key,
                 number,
-            } => write!(f, "Unknown {key} for `{number}`."),
+            } => write!(f, "`{number}` is not a valid {key}."),
         }
     }
 }
@@ -414,13 +429,26 @@ mod tests {
     
     #[test]
     fn professional_unusual_killstreak_skin() {
-        let sku = SKU::try_from("424;15;u703;w3;pk307;kt-3;ks-1;ke-2008").unwrap();
-        
-        assert_eq!(sku.killstreak_tier, Some(KillstreakTier::Professional));
-        assert_eq!(sku.killstreaker, Some(Killstreaker::HypnoBeam));
-        assert_eq!(sku.sheen, Some(Sheen::TeamShine));
-        assert_eq!(sku.skin, Some(307));
-        assert_eq!(sku.particle, Some(703));
+        assert_eq!(SKU::try_from("424;15;u703;w3;pk307;kt-3;ks-1;ke-2008").unwrap(), SKU {
+            defindex: 424,
+            quality: Quality::DecoratedWeapon,
+            craftable: true,
+            australium: false,
+            strange: false,
+            festivized: false,
+            particle: Some(703),
+            skin: Some(307),
+            killstreak_tier: Some(KillstreakTier::Professional),
+            wear: Some(Wear::FieldTested),
+            craft_number: None,
+            crate_number: None,
+            target_defindex: None,
+            output_defindex: None,
+            output_quality: None,
+            sheen: Some(Sheen::TeamShine),
+            killstreaker: Some(Killstreaker::HypnoBeam),
+            paint: None,
+        });
     }
     
     #[test]
@@ -431,6 +459,12 @@ mod tests {
     #[test]
     fn empty_quality_is_err() {
         assert!(SKU::try_from("1;5;u;pk1").is_err());
+    }
+    
+    #[test]
+    fn unknown_attribute_is_ok() {
+        assert!(SKU::try_from("1;5;superspecial").is_ok());
+        assert_eq!(SKU::try_from("1;5;superspecial").unwrap().to_string(), "1;5");
     }
     
     #[test]
