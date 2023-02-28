@@ -12,3 +12,8 @@
 ### Changed
 - Bump `tf2-enum` to `0.8.0`.
 - Better error types/descriptions.
+
+## 0.3.1 (2023-02-25)
+
+### Added
+- Borrowed implementation of `SKUString` for `SKU`.

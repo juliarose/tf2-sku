@@ -104,6 +104,12 @@ impl SKUString for SKU {
     }
 }
 
+impl SKUString for &SKU {
+    fn to_sku_string(&self) -> String {
+        self.to_string()
+    }
+}
+
 /// Formats SKU attributes into a string.
 /// 
 /// # Examples
@@ -119,10 +125,8 @@ impl SKUString for SKU {
 /// ```
 impl fmt::Display for SKU {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut string = self.defindex.to_string() + ";";
+        let mut string = format!("{};{}", self.defindex, u32::from(self.quality));
         
-        string.push_str(&(self.quality as u32).to_string());
-            
         if let Some(particle) = &self.particle {
             string.push_str(";u");
             string.push_str(&particle.to_string());
@@ -140,63 +144,63 @@ impl fmt::Display for SKU {
             string.push_str(";strange");
         }
         
-        if let Some(wear) = &self.wear {
+        if let Some(wear) = self.wear {
             string.push_str(";w");
-            string.push_str(&(*wear as u32).to_string());
+            string.push_str(&u32::from(wear).to_string());
         }
         
-        if let Some(skin) = &self.skin {
+        if let Some(skin) = self.skin {
             string.push_str(";pk");
             string.push_str(&skin.to_string());
         }
         
-        if let Some(killstreak_tier) = &self.killstreak_tier {
+        if let Some(killstreak_tier) = self.killstreak_tier {
             string.push_str(";kt-");
-            string.push_str(&(*killstreak_tier as u32).to_string());
+            string.push_str(&u32::from(killstreak_tier).to_string());
         }
         
         if self.festivized {
             string.push_str(";festive");
         }
 
-        if let Some(crate_number) = &self.crate_number {
+        if let Some(crate_number) = self.crate_number {
             string.push_str(";c");
             string.push_str(&crate_number.to_string());
         }
 
-        if let Some(craft_number) = &self.craft_number {
+        if let Some(craft_number) = self.craft_number {
             string.push_str(";n");
             string.push_str(&craft_number.to_string());
         }
-
-        if let Some(target_defindex) = &self.target_defindex {
+        
+        if let Some(target_defindex) = self.target_defindex {
             string.push_str(";td-");
             string.push_str(&target_defindex.to_string());
         }
 
-        if let Some(output_defindex) = &self.output_defindex {
+        if let Some(output_defindex) = self.output_defindex {
             string.push_str(";od-");
             string.push_str(&output_defindex.to_string());
         }
-
-        if let Some(output_quality) = &self.output_quality {
+        
+        if let Some(output_quality) = self.output_quality {
             string.push_str(";oq-");
-            string.push_str(&(*output_quality as u32).to_string());
+            string.push_str(&u32::from(output_quality).to_string());
         }
 
-        if let Some(paint) = &self.paint {
+        if let Some(paint) = self.paint {
             string.push_str(";p");
-            string.push_str(&(*paint as u32).to_string());
+            string.push_str(&u32::from(paint).to_string());
         }
-
-        if let Some(sheen) = &self.sheen {
+        
+        if let Some(sheen) = self.sheen {
             string.push_str(";ks-");
-            string.push_str(&(*sheen as u32).to_string());
+            string.push_str(&u32::from(sheen).to_string());
         }
-
-        if let Some(killstreaker) = &self.killstreaker {
+        
+        if let Some(killstreaker) = self.killstreaker {
             string.push_str(";ke-");
-            string.push_str(&(*killstreaker as u32).to_string());
+            string.push_str(&u32::from(killstreaker).to_string());
         }
 
         write!(f, "{}", string)
@@ -377,6 +381,7 @@ mod tests {
     use super::*;
     use serde::Deserialize;
     use serde_json::{self, json};
+    use std::sync::Arc;
     
     #[derive(Serialize, Deserialize)]
     struct Item {
@@ -463,5 +468,12 @@ mod tests {
         let s = serde_json::to_string(&Item { sku }).unwrap();
 
         assert_eq!(s, r#"{"sku":"16310;15;u703;w2;pk310"}"#);
+    }
+    
+    #[test]
+    fn to_sku_string_in_arc() {
+        let sku = Arc::new(SKU::try_from("16310;15;u703;w2;pk310").unwrap());
+        
+        assert_eq!(sku.as_ref().to_sku_string(), "16310;15;u703;w2;pk310");
     }
 }
