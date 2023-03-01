@@ -106,10 +106,10 @@ impl SKU {
         }
     }
     
-    /// Infallible method for parsing from a string. Always produces an output regardless of 
-    /// format. It's advised to use [`TryFrom<&str>`] over this method to ensure predictable output. 
-    /// If no `defindex` is detected, it will default to `-1`. `quality` defaults to 
-    /// [`Quality::Rarity2`]. If the SKU is properly formatted this functions identical to 
+    /// Parses attributes from a string, ignoring failures; always produces an output regardless 
+    /// of input. It's advised to use [`TryFrom<&str>`] over this method to ensure predictable 
+    /// output. If no `defindex` is detected, it will default to `-1`. `quality` defaults to 
+    /// [`Quality::Rarity2`]. If the SKU is properly formatted this produces identical output as 
     /// [`TryFrom<&str>`].
     /// 
     /// # Examples
@@ -117,7 +117,7 @@ impl SKU {
     /// ```
     /// use tf2_sku::{SKU, tf2_enum::Quality};
     /// 
-    /// let sku = SKU::from_str("12;u43;kt-0;gibus");
+    /// let sku = SKU::parse_attributes("12;u43;kt-0;gibus");
     /// assert_eq!(sku.defindex, 12);
     /// assert_eq!(sku.quality, Quality::Rarity2);
     /// assert_eq!(sku.particle, Some(43));
@@ -126,11 +126,11 @@ impl SKU {
     /// // valid sku
     /// let sku = SKU::try_from("200;11;australium;kt-3").unwrap();
     /// // produces the same output if the SKU is valid
-    /// assert_eq!(SKU::from_str("200;11;australium;kt-3"), sku);
+    /// assert_eq!(SKU::parse_attributes("200;11;australium;kt-3"), sku);
     /// // invalid quality, produces a different output
-    /// assert_ne!(SKU::from_str("200;100;australium;kt-3"), sku);
+    /// assert_ne!(SKU::parse_attributes("200;100;australium;kt-3"), sku);
     /// ```
-    pub fn from_str(string: &str) -> Self {
+    pub fn parse_attributes(string: &str) -> Self {
         let mut parsed = Self::default();
         let mut sku_split = string.split(';');
         let defindex_str = sku_split.next()
@@ -289,8 +289,8 @@ impl fmt::Display for SKU {
 impl TryFrom<&str> for SKU {
     type Error = ParseError;
         
-    fn try_from(string: &str) -> Result<Self, Self::Error> {
-        let mut sku_split = string.split(';');
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let mut sku_split = s.split(';');
         let defindex_str = sku_split.next()
             .ok_or(ParseError::InvalidFormat)?;
         let quality_str = sku_split.next()
@@ -311,8 +311,16 @@ impl TryFrom<&str> for SKU {
     }
 }
 
+impl std::str::FromStr for SKU {
+    type Err = ParseError;
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::try_from(s)
+    }
+}
+
 /// Parses a single SKU attribute.
-fn parse_sku_element<'a>(
+fn parse_sku_element(
     parsed: &mut SKU,
     element: &str,
 ) -> Result<(), ParseError> {
@@ -522,8 +530,8 @@ mod tests {
     }
     #[test]
     
-    fn parses_from_str() {
-        let sku = SKU::from_str("u43;;;pk1;kt-0;gibus🍌");
+    fn parses_attributes() {
+        let sku = SKU::parse_attributes("u43;;;pk1;kt-0;gibus🍌");
         
         assert_eq!(sku.defindex, -1);
         assert_eq!(sku.quality, Quality::Rarity2);

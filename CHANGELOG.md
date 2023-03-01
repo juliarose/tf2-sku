@@ -17,4 +17,5 @@
 
 ### Added
 - Borrowed implementation of `SKUString` for `SKU`.
-- `from_str` method to `SKU`.
+- `parse_attributes` method to `SKU`.
+- `std::str::FromStr` impl to `SKU`.
