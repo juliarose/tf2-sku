@@ -152,7 +152,7 @@ impl SKU {
             parse_sku_element(&mut parsed, quality_str).ok();
         }
         
-        while let Some(element) = sku_split.next() {
+        for element in sku_split {
             parse_sku_element(&mut parsed, element).ok();
         }
         
@@ -303,7 +303,7 @@ impl TryFrom<&str> for SKU {
         let quality = parse_enum_u32("quality", quality_str)?;
         let mut parsed = SKU::new(defindex, quality);
         
-        while let Some(element) = sku_split.next() {
+        for element in sku_split {
             parse_sku_element(&mut parsed, element)?;
         }
         
@@ -320,7 +320,7 @@ fn parse_sku_element<'a>(
     
     // Walk back through chars until a non-digit is found
     for c in element.chars().rev() {
-        if c.is_digit(10) {
+        if c.is_ascii_digit() {
             split_at -= 1;
         } else {
             break;
