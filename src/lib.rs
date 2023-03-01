@@ -267,7 +267,7 @@ impl fmt::Display for SKU {
             string.push_str(u32::from(killstreaker).to_string().as_str());
         }
         
-        write!(f, "{}", string)
+        write!(f, "{string}")
     }
 }
 
@@ -295,12 +295,12 @@ impl TryFrom<&str> for SKU {
             .ok_or(ParseError::InvalidFormat)?;
         let quality_str = sku_split.next()
             .ok_or(ParseError::InvalidFormat)?;
-        let defindex = defindex_str.parse::<i32>()
+        let defindex = defindex_str.parse()
             .map_err(|error| ParseError::ParseInt {
                 key: "defindex",
                 error,
             })?;
-        let quality = parse_enum_u32::<Quality>("quality", quality_str)?;
+        let quality = parse_enum_u32("quality", quality_str)?;
         let mut parsed = SKU::new(defindex, quality);
         
         while let Some(element) = sku_split.next() {
