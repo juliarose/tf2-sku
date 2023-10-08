@@ -3,10 +3,9 @@
 //! SKU parser for Team Fortress 2 items.
 //! 
 //! ## Usage
-//!
 //! ```
 //! use tf2_sku::SKU;
-//! use tf2_sku::tf2_enum::{Quality, KillstreakTier};
+//! use tf2_sku::tf2_enum::{Quality, KillstreakTier, Spell};
 //! 
 //! let sku = SKU::try_from("264;11;kt-3").unwrap();
 //! 
@@ -14,26 +13,60 @@
 //! assert_eq!(sku.quality, Quality::Strange);
 //! assert_eq!(sku.killstreak_tier, Some(KillstreakTier::Professional));
 //! assert_eq!(sku.to_string(), "264;11;kt-3");
+//! 
+//! // Also supports spells and strange parts
+//! let sku = SKU::try_from("627;6;footprints-2").unwrap();
+//! 
+//! assert!(sku.spells.contains(&Spell::HeadlessHorseshoes));
 //! ```
 
+pub mod error;
+
+mod helpers;
+mod spells;
+mod strange_parts;
+
+pub use spells::Spells;
+pub use strange_parts::StrangeParts;
 pub use tf2_enum;
 
-use std::num::{IntErrorKind, ParseIntError};
+use error::ParseError;
+use helpers::{parse_enum_u32, parse_u32};
+
 use std::fmt;
 use std::convert::TryFrom;
-use tf2_enum::num_enum::{TryFromPrimitive, TryFromPrimitiveError};
-use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker};
-use serde::{Serialize, Serializer, de::{self, Visitor}};
+use std::hash::Hash;
+use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker, Spell, FootprintsSpell, PaintSpell};
+use serde::{Serialize, Serializer};
+use serde::de::{self, Visitor};
 
 /// Trait for converting to a SKU string.
 pub trait SKUString {
     fn to_sku_string(&self) -> String;
 }
 
+/// A SKU containing detailed fields to identify an item.
+/// 
+/// # Examples
+/// ```
+/// use tf2_sku::SKU;
+/// use tf2_enum::{KillstreakTier, Sheen, Killstreaker, Quality};
+/// 
+/// let sku = SKU {
+///     defindex: 264,
+///     quality: Quality::Strange,
+///     killstreak_tier: Some(KillstreakTier::Professional),
+///     sheen: Some(Sheen::TeamShine),
+///     killstreaker: Some(Killstreaker::FireHorns),
+///     ..Default::default()
+/// };
+/// 
+/// assert_eq!(sku.to_string(), "264;11;kt-3;ks-1;ke-2002");
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SKU {
     /// This can be negative at times to refer to items that are not defined in the schema e.g. 
-    /// "Random Craft Hat".
+    /// ["Random Craft Hat"](https://marketplace.tf/items/tf2/-100;6).
     pub defindex: i32,
     pub quality: Quality,
     pub craftable: bool,
@@ -52,6 +85,8 @@ pub struct SKU {
     pub paint: Option<Paint>,
     pub sheen: Option<Sheen>,
     pub killstreaker: Option<Killstreaker>,
+    pub spells: Spells,
+    pub strange_parts: StrangeParts,
 }
 
 /// Creates a SKU with default values. All `Option` fields will be `None`, and all `bool` fields 
@@ -78,6 +113,8 @@ impl Default for SKU {
             paint: None,
             sheen: None,
             killstreaker: None,
+            spells: Spells::default(),
+            strange_parts: StrangeParts::default(),
         }
     }
 }
@@ -88,9 +125,9 @@ impl SKU {
     /// `true`. 
     /// 
     /// # Examples
-    ///
     /// ```
-    /// use tf2_sku::{SKU, tf2_enum::Quality};
+    /// use tf2_sku::SKU;
+    /// use tf2_enum::Quality;
     /// 
     /// let sku = SKU::new(264, Quality::Strange);
     /// assert_eq!(sku.to_string(), "264;11");
@@ -113,9 +150,9 @@ impl SKU {
     /// [`TryFrom<&str>`].
     /// 
     /// # Examples
-    /// 
     /// ```
-    /// use tf2_sku::{SKU, tf2_enum::Quality};
+    /// use tf2_sku::SKU;
+    /// use tf2_enum::Quality;
     /// 
     /// let sku = SKU::parse_attributes("12;u43;kt-0;gibus");
     /// assert_eq!(sku.defindex, 12);
@@ -123,11 +160,11 @@ impl SKU {
     /// assert_eq!(sku.particle, Some(43));
     /// assert!(sku.killstreak_tier.is_none());
     /// 
-    /// // valid sku
+    /// // Valid SKU.
     /// let sku = SKU::try_from("200;11;australium;kt-3").unwrap();
-    /// // produces the same output if the SKU is valid
+    /// // Produces the same output if the SKU is valid.
     /// assert_eq!(SKU::parse_attributes("200;11;australium;kt-3"), sku);
-    /// // invalid quality, produces a different output
+    /// // Invalid quality, produces a different output.
     /// assert_ne!(SKU::parse_attributes("200;100;australium;kt-3"), sku);
     /// ```
     pub fn parse_attributes(string: &str) -> Self {
@@ -177,9 +214,9 @@ impl SKUString for &SKU {
 /// Formats SKU attributes into a string.
 /// 
 /// # Examples
-///
 /// ```
-/// use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
+/// use tf2_sku::SKU;
+/// use tf2_enum::{Quality, KillstreakTier};
 /// 
 /// let mut sku = SKU::new(264, Quality::Strange);
 /// 
@@ -189,85 +226,85 @@ impl SKUString for &SKU {
 /// ```
 impl fmt::Display for SKU {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut string = format!("{};{}", self.defindex, u32::from(self.quality));
+        write!(f, "{};{}", self.defindex, u32::from(self.quality))?;
         
         if let Some(particle) = self.particle {
-            string.push_str(";u");
-            string.push_str(particle.to_string().as_str());
+            write!(f, ";u{}", particle)?;
         }
         
         if !self.craftable {
-            string.push_str(";uncraftable");
+            write!(f, ";uncraftable")?;
         }
         
         if self.australium {
-            string.push_str(";australium");
+            write!(f, ";australium")?;
         }
         
         if self.strange {
-            string.push_str(";strange");
+            write!(f, ";strange")?;
         }
         
         if let Some(wear) = self.wear {
-            string.push_str(";w");
-            string.push_str(u32::from(wear).to_string().as_str());
+            write!(f, ";w{}", u32::from(wear))?;
         }
         
         if let Some(skin) = self.skin {
-            string.push_str(";pk");
-            string.push_str(skin.to_string().as_str());
+            write!(f, ";pk{}", skin)?;
         }
         
         if let Some(killstreak_tier) = self.killstreak_tier {
-            string.push_str(";kt-");
-            string.push_str(u32::from(killstreak_tier).to_string().as_str());
+            write!(f, ";kt-{}", u32::from(killstreak_tier))?;
         }
         
         if self.festivized {
-            string.push_str(";festive");
+            write!(f, ";festive")?;
         }
-
+        
         if let Some(crate_number) = self.crate_number {
-            string.push_str(";c");
-            string.push_str(crate_number.to_string().as_str());
+            write!(f, ";c{}", crate_number)?;
         }
-
+        
         if let Some(craft_number) = self.craft_number {
-            string.push_str(";n");
-            string.push_str(craft_number.to_string().as_str());
+            write!(f, ";n{}", craft_number)?;
         }
         
         if let Some(target_defindex) = self.target_defindex {
-            string.push_str(";td-");
-            string.push_str(target_defindex.to_string().as_str());
+            write!(f, ";td-{}", target_defindex)?;
         }
         
         if let Some(output_defindex) = self.output_defindex {
-            string.push_str(";od-");
-            string.push_str(output_defindex.to_string().as_str());
+            write!(f, ";od-{}", output_defindex)?;
         }
         
         if let Some(output_quality) = self.output_quality {
-            string.push_str(";oq-");
-            string.push_str(u32::from(output_quality).to_string().as_str());
+            write!(f, ";oq-{}", u32::from(output_quality))?;
         }
         
         if let Some(paint) = self.paint {
-            string.push_str(";p");
-            string.push_str(u32::from(paint).to_string().as_str());
+            write!(f, ";p{}", u32::from(paint))?;
         }
         
         if let Some(sheen) = self.sheen {
-            string.push_str(";ks-");
-            string.push_str(u32::from(sheen).to_string().as_str());
+            write!(f, ";ks-{}", u32::from(sheen))?;
         }
         
         if let Some(killstreaker) = self.killstreaker {
-            string.push_str(";ke-");
-            string.push_str(u32::from(killstreaker).to_string().as_str());
+            write!(f, ";ke-{}", u32::from(killstreaker))?;
         }
         
-        write!(f, "{string}")
+        for strange_part in self.strange_parts {
+            write!(f, ";sp-{}", u32::from(strange_part))?;
+        }
+        
+        for spell in self.spells {
+            write!(f, ";{}", spells::spell_label(&spell))?;
+            
+            if let Some(value) = spell.attribute_value() {
+                write!(f, "-{}", value)?;
+            }
+        }
+        
+        Ok(())
     }
 }
 
@@ -276,9 +313,9 @@ impl fmt::Display for SKU {
 /// attributes.
 /// 
 /// # Examples
-///
 /// ```
-/// use tf2_sku::{SKU, tf2_enum::{Quality, KillstreakTier}};
+/// use tf2_sku::SKU;
+/// use tf2_enum::{Quality, KillstreakTier};
 /// 
 /// let sku = SKU::try_from("264;11;kt-3").unwrap();
 /// 
@@ -335,9 +372,9 @@ fn parse_sku_element(
         }
     }
     
-    // Split at the last digit (`value` will be an empty string if no digit was found)
+    // Split at where the numeric value begins (`value` will be an empty string if no digit was found)
     // This shouldn't cause issues with strings that contain varying byte lengths. If the last 
-    // character is multi-byte it is not a valid digit, so it will stop immediately and `split_at`
+    // character is multi-byte it is not a valid ascii digit, so it will stop immediately and `split_at`
     // will be the total byte length of the string.
     let (name, value) = element.split_at(split_at);
     
@@ -354,6 +391,13 @@ fn parse_sku_element(
         "oq-" => parsed.output_quality = Some(parse_enum_u32("output quality", value)?),
         "ks-" => parsed.sheen = Some(parse_enum_u32("sheen", value)?),
         "ke-" => parsed.killstreaker = Some(parse_enum_u32("killstreaker", value)?),
+        "sp-" => parsed.strange_parts.push(parse_enum_u32("strange part", value)?),
+        "footprints-" => parsed.spells.push(parse_enum_u32::<FootprintsSpell>("footprints spell", value)?.into()),
+        "paintspell-" => parsed.spells.push(parse_enum_u32::<PaintSpell>("paint spell", value)?.into()),
+        "voices" => parsed.spells.push(Spell::VoicesFromBelow),
+        "exorcism" => parsed.spells.push(Spell::Exorcism),
+        "halloweenfire" => parsed.spells.push(Spell::HalloweenFire),
+        "pumpkinbombs" => parsed.spells.push(Spell::PumpkinBombs),
         "uncraftable" => parsed.craftable = false,
         "australium" => parsed.australium = true,
         "strange" => parsed.strange = true,
@@ -363,49 +407,6 @@ fn parse_sku_element(
     }
     
     Ok(())
-}
-
-/// An error when parsing from a string.
-#[derive(Debug)]
-pub enum ParseError {
-    /// An integer failed to parse.
-    ParseInt {
-        key: &'static str,
-        error: ParseIntError,
-    },
-    /// The SKU format is not valid. Must begin with a defindex and a quality e.g. "5021;6".
-    InvalidFormat,
-    /// An attribute value is not valid.
-    InvalidValue {
-        key: &'static str,
-        number: u32,
-    },
-}
-
-impl std::error::Error for ParseError {}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::ParseInt {
-                key,
-                error ,
-            } => match *error.kind() {
-                IntErrorKind::Empty => write!(f, "Value for {key} in SKU is empty."),
-                IntErrorKind::InvalidDigit => write!(f, "Value for {key} in SKU contains invalid digit."),
-                IntErrorKind::PosOverflow => write!(f, "Value for {key} in SKU overflows integer bounds."),
-                IntErrorKind::NegOverflow => write!(f, "Value for {key} in SKU underflows integer bounds."),
-                // shouldn't occur
-                IntErrorKind::Zero => write!(f, "Value for {key} in SKU zero for non-zero type."),
-                _ => write!(f, "Value for {key} in SKU could not be parsed: {error}"),
-            },
-            ParseError::InvalidFormat => write!(f, "Invalid SKU format. Must begin with a defindex followed by a quality e.g. \"5021;6\""),
-            ParseError::InvalidValue {
-                key,
-                number,
-            } => write!(f, "Unknown {key}: {number}"),
-        }
-    }
 }
 
 impl Serialize for SKU {
@@ -443,31 +444,13 @@ impl<'de> de::Deserialize<'de> for SKU {
     }
 }
 
-fn parse_enum_u32<T>(key: &'static str, s: &str) -> Result<T, ParseError>
-where T:
-    TryFromPrimitive<Primitive = u32>,
-{
-    T::try_from_primitive(parse_u32(key, s)?)
-        .map_err(|TryFromPrimitiveError { number }| ParseError::InvalidValue {
-            key,
-            number,
-        })
-}
-
-fn parse_u32(key: &'static str, value: &str) -> Result<u32, ParseError> {
-    value.parse::<u32>()
-        .map_err(|error| ParseError::ParseInt {
-            key,
-            error,
-        })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde::Deserialize;
     use serde_json::{self, json};
     use std::sync::Arc;
+    use tf2_enum::StrangePart;
     
     #[derive(Serialize, Deserialize)]
     struct Item {
@@ -479,22 +462,8 @@ mod tests {
         assert_eq!(SKU::try_from("1071;11;kt-3").unwrap(), SKU {
             defindex: 1071,
             quality: Quality::Strange,
-            craftable: true,
-            australium: false,
-            strange: false,
-            festivized: false,
-            particle: None,
-            skin: None,
             killstreak_tier: Some(KillstreakTier::Professional),
-            wear: None,
-            craft_number: None,
-            crate_number: None,
-            target_defindex: None,
-            output_defindex: None,
-            output_quality: None,
-            sheen: None,
-            killstreaker: None,
-            paint: None,
+            ..SKU::default()
         });
     }
     
@@ -503,22 +472,13 @@ mod tests {
         assert_eq!(SKU::try_from("424;15;u703;w3;pk307;kt-3;ks-1;ke-2008").unwrap(), SKU {
             defindex: 424,
             quality: Quality::DecoratedWeapon,
-            craftable: true,
-            australium: false,
-            strange: false,
-            festivized: false,
             particle: Some(703),
             skin: Some(307),
             killstreak_tier: Some(KillstreakTier::Professional),
             wear: Some(Wear::FieldTested),
-            craft_number: None,
-            crate_number: None,
-            target_defindex: None,
-            output_defindex: None,
-            output_quality: None,
             sheen: Some(Sheen::TeamShine),
             killstreaker: Some(Killstreaker::HypnoBeam),
-            paint: None,
+            ..SKU::default()
         });
     }
     
@@ -598,5 +558,26 @@ mod tests {
         let sku = Arc::new(SKU::try_from("16310;15;u703;w2;pk310").unwrap());
         
         assert_eq!(sku.as_ref().to_sku_string(), "16310;15;u703;w2;pk310");
+    }
+    
+    #[test]
+    fn parses_spells_sku() {
+        let sku = SKU::try_from("627;6;footprints-2;voices").unwrap();
+        
+        assert_eq!(sku.spells, Spells::new([
+            Some(Spell::HeadlessHorseshoes),
+            Some(Spell::VoicesFromBelow),
+        ]));
+    }
+    
+    #[test]
+    fn parses_strange_parts() {
+        let sku = SKU::try_from("627;6;sp-36;sp-37").unwrap();
+        
+        assert_eq!(sku.strange_parts, StrangeParts::new([
+            Some(StrangePart::SappersRemoved),
+            Some(StrangePart::CloakedSpiesKilled),
+            None,
+        ]));
     }
 }
