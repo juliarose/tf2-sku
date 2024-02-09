@@ -4,7 +4,7 @@ For parsing attributes from SKU strings.
 
 ## Usage
 
-```rs
+```rust
 use tf2_sku::SKU;
 use tf2_sku::tf2_enum::{Quality, KillstreakTier, Spell};
 

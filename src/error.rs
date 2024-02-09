@@ -8,19 +8,21 @@ use std::num::{IntErrorKind, ParseIntError};
 pub enum ParseError {
     /// An integer failed to parse.
     ParseInt {
+        /// The key of the attribute.
         key: &'static str,
+        /// The error from parsing the integer.
         error: ParseIntError,
     },
     /// The SKU format is not valid. Must begin with a defindex and a quality e.g. "5021;6".
     InvalidFormat,
     /// An attribute value is not valid.
     InvalidValue {
+        /// The key of the attribute.
         key: &'static str,
+        /// The value attempted to be converted.
         number: u32,
     },
 }
-
-impl std::error::Error for ParseError {}
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

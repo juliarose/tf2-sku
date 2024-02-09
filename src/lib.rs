@@ -20,6 +20,8 @@
 //! assert!(sku.spells.contains(&Spell::HeadlessHorseshoes));
 //! ```
 
+#![warn(missing_docs)]
+
 pub mod error;
 
 mod helpers;
@@ -42,6 +44,7 @@ use serde::de::{self, Visitor};
 
 /// Trait for converting to a SKU string.
 pub trait SKUString {
+    /// Converts to a SKU string.
     fn to_sku_string(&self) -> String;
 }
 
@@ -68,24 +71,43 @@ pub struct SKU {
     /// This can be negative at times to refer to items that are not defined in the schema e.g. 
     /// ["Random Craft Hat"](https://marketplace.tf/items/tf2/-100;6).
     pub defindex: i32,
+    /// The quality of the item.
     pub quality: Quality,
+    /// Whether the item is craftable.
     pub craftable: bool,
+    /// Whether the item is australium.
     pub australium: bool,
+    /// Whether the item is strange. Not to be confused with strange quality items.
     pub strange: bool,
+    /// Whether the item is festivized.
     pub festivized: bool,
+    /// The particle effect value of the item.
     pub particle: Option<u32>,
+    /// The skin value of the item.
     pub skin: Option<u32>,
+    /// The killstreak tier of the item.
     pub killstreak_tier: Option<KillstreakTier>,
+    /// The wear of the item.
     pub wear: Option<Wear>,
+    /// The target defindex of the item.
     pub target_defindex: Option<u32>,
+    /// The output defindex of the item.
     pub output_defindex: Option<u32>,
+    /// The output quality of the item.
     pub output_quality: Option<Quality>,
+    /// The craft number of the item.
     pub craft_number: Option<u32>,
+    /// The crate number of the item.
     pub crate_number: Option<u32>,
+    /// The paint of the item.
     pub paint: Option<Paint>,
+    /// The sheen of the item.
     pub sheen: Option<Sheen>,
+    /// The killstreaker of the item.
     pub killstreaker: Option<Killstreaker>,
+    /// The spells of the item.
     pub spells: Spells,
+    /// The strange parts of the item.
     pub strange_parts: StrangeParts,
 }
 
@@ -361,6 +383,7 @@ fn parse_sku_element(
     parsed: &mut SKU,
     element: &str,
 ) -> Result<(), ParseError> {
+    // This is the byte length of the string. NOT the character length.
     let mut split_at = element.len();
     
     // Walk back through chars until a non-digit is found
