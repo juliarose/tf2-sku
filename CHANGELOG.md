@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 (2024-02-09)
+
+### Added
+- More documentation.
+
 ## 0.4.0 (2023-10-06)
 
 ### Added
