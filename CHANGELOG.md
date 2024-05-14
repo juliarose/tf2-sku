@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2 (2024-05-14)
+
+### Added
+- Minor issue with `parse_enum_u32` in `helpers`.
+
 ## 0.4.1 (2024-02-09)
 
 ### Added

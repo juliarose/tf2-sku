@@ -1,15 +1,20 @@
 //! Helper methods.
 
 use crate::error::ParseError;
-use tf2_enum::num_enum::{TryFromPrimitive, TryFromPrimitiveError};
+use tf2_enum::num_enum::TryFromPrimitive;
 
 /// Parses an enum from a `&str` converted to a `u32`.
-pub fn parse_enum_u32<T>(key: &'static str, s: &str) -> Result<T, ParseError>
+pub fn parse_enum_u32<T>(
+    key: &'static str,
+    s: &str,
+) -> Result<T, ParseError>
 where
     T: TryFromPrimitive<Primitive = u32>,
 {
-    T::try_from_primitive(parse_u32(key, s)?)
-        .map_err(|TryFromPrimitiveError { number }| ParseError::InvalidValue {
+    let number = parse_u32(key, s)?;
+    
+    T::try_from_primitive(number)
+        .map_err(|_| ParseError::InvalidValue {
             key,
             number,
         })
