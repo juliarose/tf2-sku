@@ -7,7 +7,7 @@
 //! use tf2_sku::SKU;
 //! use tf2_sku::tf2_enum::{Quality, KillstreakTier, Spell};
 //! 
-//! let sku = SKU::try_from("264;11;kt-1").unwrap();
+//! let sku = "264;11;kt-1".parse::<SKU>().unwrap();
 //! 
 //! assert_eq!(sku.defindex, 264);
 //! assert_eq!(sku.quality, Quality::Strange);
@@ -15,7 +15,7 @@
 //! assert_eq!(sku.to_string(), "264;11;kt-1");
 //! 
 //! // Also supports spells and strange parts
-//! let sku = SKU::try_from("627;6;footprints-2").unwrap();
+//! let sku = "627;6;footprints-2".parse::<SKU>().unwrap();
 //! 
 //! assert!(sku.spells.contains(&Spell::HeadlessHorseshoes));
 //! ```
@@ -25,11 +25,11 @@
 pub mod error;
 
 mod helpers;
-mod spells;
-mod strange_parts;
+mod spell_set;
+mod strange_part_set;
 
-pub use spells::Spells;
-pub use strange_parts::StrangeParts;
+pub use spell_set::SpellSet;
+pub use strange_part_set::StrangePartSet;
 pub use tf2_enum;
 
 use error::ParseError;
@@ -38,6 +38,7 @@ use helpers::{parse_enum_u32, parse_u32};
 use std::fmt;
 use std::convert::TryFrom;
 use std::hash::Hash;
+use std::str::FromStr;
 use tf2_enum::{Quality, KillstreakTier, Wear, Paint, Sheen, Killstreaker, Spell, FootprintsSpell, PaintSpell};
 use serde::{Serialize, Serializer};
 use serde::de::{self, Visitor};
@@ -106,9 +107,9 @@ pub struct SKU {
     /// The killstreaker of the item.
     pub killstreaker: Option<Killstreaker>,
     /// The spells of the item.
-    pub spells: Spells,
+    pub spells: SpellSet,
     /// The strange parts of the item.
-    pub strange_parts: StrangeParts,
+    pub strange_parts: StrangePartSet,
 }
 
 /// Creates a SKU with default values. All `Option` fields will be `None`, and all `bool` fields 
@@ -135,8 +136,8 @@ impl Default for SKU {
             paint: None,
             sheen: None,
             killstreaker: None,
-            spells: Spells::default(),
-            strange_parts: StrangeParts::default(),
+            spells: SpellSet::default(),
+            strange_parts: StrangePartSet::default(),
         }
     }
 }
@@ -166,10 +167,10 @@ impl SKU {
     }
     
     /// Parses attributes from a string, ignoring failures; always produces an output regardless 
-    /// of input. It's advised to use [`TryFrom<&str>`] over this method to ensure predictable 
+    /// of input. It's advised to use [`SKU::from_str`] over this method to ensure predictable 
     /// output. If no `defindex` is detected, it will default to `-1`. `quality` defaults to 
     /// [`Quality::Rarity2`]. If the SKU is properly formatted this produces identical output as 
-    /// [`TryFrom<&str>`].
+    /// [`SKU::from_str`].
     /// 
     /// # Examples
     /// ```
@@ -183,11 +184,11 @@ impl SKU {
     /// assert!(sku.killstreak_tier.is_none());
     /// 
     /// // Valid SKU.
-    /// let sku = SKU::try_from("200;11;australium;kt-3").unwrap();
+    /// let sku = "200;11;australium;kt-3".parse::<SKU>().unwrap();
     /// // Produces the same output if the SKU is valid.
     /// assert_eq!(SKU::parse_attributes("200;11;australium;kt-3"), sku);
     /// // Invalid quality, produces a different output.
-    /// assert_ne!(SKU::parse_attributes("200;100;australium;kt-3"), sku);
+    /// assert_ne!(SKU::parse_attributes("200;453;australium;kt-3"), sku);
     /// ```
     pub fn parse_attributes(string: &str) -> Self {
         let mut parsed = Self::default();
@@ -229,7 +230,7 @@ impl SKUString for SKU {
 /// This is the same as `to_string`.
 impl SKUString for &SKU {
     fn to_sku_string(&self) -> String {
-        self.to_string()
+        (*self).to_sku_string()
     }
 }
 
@@ -319,7 +320,7 @@ impl fmt::Display for SKU {
         }
         
         for spell in self.spells {
-            write!(f, ";{}", spells::spell_label(&spell))?;
+            write!(f, ";{}", spell_set::spell_label(&spell))?;
             
             if let Some(value) = spell.attribute_value() {
                 write!(f, "-{}", value)?;
@@ -339,7 +340,7 @@ impl fmt::Display for SKU {
 /// use tf2_sku::SKU;
 /// use tf2_enum::{Quality, KillstreakTier};
 /// 
-/// let sku = SKU::try_from("264;11;kt-3").unwrap();
+/// let sku = "264;11;kt-3".parse::<SKU>().unwrap();
 /// 
 /// assert_eq!(sku.defindex, 264);
 /// assert_eq!(sku.quality, Quality::Strange);
@@ -370,7 +371,23 @@ impl TryFrom<&str> for SKU {
     }
 }
 
-impl std::str::FromStr for SKU {
+impl TryFrom<String> for SKU {
+    type Error = ParseError;
+    
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Self::try_from(s.as_str())
+    }
+}
+
+impl TryFrom<&String> for SKU {
+    type Error = ParseError;
+    
+    fn try_from(s: &String) -> Result<Self, Self::Error> {
+        Self::try_from(s.as_str())
+    }
+}
+
+impl FromStr for SKU {
     type Err = ParseError;
     
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -414,13 +431,31 @@ fn parse_sku_element(
         "oq-" => parsed.output_quality = Some(parse_enum_u32("output quality", value)?),
         "ks-" => parsed.sheen = Some(parse_enum_u32("sheen", value)?),
         "ke-" => parsed.killstreaker = Some(parse_enum_u32("killstreaker", value)?),
-        "sp-" => parsed.strange_parts.push(parse_enum_u32("strange part", value)?),
-        "footprints-" => parsed.spells.push(parse_enum_u32::<FootprintsSpell>("footprints spell", value)?.into()),
-        "paintspell-" => parsed.spells.push(parse_enum_u32::<PaintSpell>("paint spell", value)?.into()),
-        "voices" => parsed.spells.push(Spell::VoicesFromBelow),
-        "exorcism" => parsed.spells.push(Spell::Exorcism),
-        "halloweenfire" => parsed.spells.push(Spell::HalloweenFire),
-        "pumpkinbombs" => parsed.spells.push(Spell::PumpkinBombs),
+        "sp-" => {
+            parsed.strange_parts.insert(parse_enum_u32("strange part", value)?).ok();
+        },
+        "footprints-" => {
+            let spell = parse_enum_u32::<FootprintsSpell>("footprints spell", value)?;
+            
+            parsed.spells.insert(spell.into()).ok();
+        },
+        "paintspell-" => {
+            let spell = parse_enum_u32::<PaintSpell>("paint spell", value)?;
+            
+            parsed.spells.insert(spell.into()).ok();
+        },
+        "voices" => {
+            parsed.spells.insert(Spell::VoicesFromBelow).ok();
+        },
+        "exorcism" => {
+            parsed.spells.insert(Spell::Exorcism).ok();
+        },
+        "halloweenfire" => {
+            parsed.spells.insert(Spell::HalloweenFire).ok();
+        },
+        "pumpkinbombs" => {
+            parsed.spells.insert(Spell::PumpkinBombs).ok();
+        },
         "uncraftable" => parsed.craftable = false,
         "australium" => parsed.australium = true,
         "strange" => parsed.strange = true,
@@ -482,7 +517,7 @@ mod tests {
     
     #[test]
     fn golden_frying_pan_correct() {
-        assert_eq!(SKU::try_from("1071;11;kt-3").unwrap(), SKU {
+        assert_eq!("1071;11;kt-3".parse::<SKU>().unwrap(), SKU {
             defindex: 1071,
             quality: Quality::Strange,
             killstreak_tier: Some(KillstreakTier::Professional),
@@ -492,7 +527,7 @@ mod tests {
     
     #[test]
     fn professional_unusual_killstreak_skin() {
-        assert_eq!(SKU::try_from("424;15;u703;w3;pk307;kt-3;ks-1;ke-2008").unwrap(), SKU {
+        assert_eq!("424;15;u703;w3;pk307;kt-3;ks-1;ke-2008".parse::<SKU>().unwrap(), SKU {
             defindex: 424,
             quality: Quality::DecoratedWeapon,
             particle: Some(703),
@@ -507,9 +542,9 @@ mod tests {
     
     #[test]
     fn attribute_with_four_byte_utf8_char_is_ignored() {
-        assert!(SKU::try_from("1071;1;u-🍌🍌122;🍌🍌").unwrap().particle.is_none());
-        assert!(SKU::try_from("1071;1;u🍌122;🍌🍌").unwrap().particle.is_none());
-        assert!(SKU::try_from("1071;1;u🍌122🍌;🍌🍌").unwrap().particle.is_none());
+        assert!("1071;1;u-🍌🍌122;🍌🍌".parse::<SKU>().unwrap().particle.is_none());
+        assert!("1071;1;u🍌122;🍌🍌".parse::<SKU>().unwrap().particle.is_none());
+        assert!("1071;1;u🍌122🍌;🍌🍌".parse::<SKU>().unwrap().particle.is_none());
     }
     #[test]
     
@@ -525,23 +560,23 @@ mod tests {
     
     #[test]
     fn bad_quality_is_err() {
-        assert!(SKU::try_from("1071;122").is_err());
+        assert!("1071;122".parse::<SKU>().is_err());
     }
     
     #[test]
     fn empty_quality_is_err() {
-        assert!(SKU::try_from("1;5;u;pk1").is_err());
+        assert!("1;5;u;pk1".parse::<SKU>().is_err());
     }
     
     #[test]
     fn unknown_attribute_is_ok() {
-        assert!(SKU::try_from("1;5;superspecial").is_ok());
-        assert_eq!(SKU::try_from("1;5;superspecial").unwrap().to_string(), "1;5");
+        assert!("1;5;superspecial".parse::<SKU>().is_ok());
+        assert_eq!("1;5;superspecial".parse::<SKU>().unwrap().to_string(), "1;5");
     }
     
     #[test]
     fn bad_quality_is_err_check_error_key() {
-        if let ParseError::InvalidValue { key, number } = SKU::try_from("1071;122").unwrap_err() {
+        if let ParseError::InvalidValue { key, number } = "1071;122".parse::<SKU>().unwrap_err() {
             assert_eq!(key, "quality");
             assert_eq!(number, 122);
         } else {
@@ -551,12 +586,12 @@ mod tests {
     
     #[test]
     fn negative_defindex_is_ok() {
-        assert!(SKU::try_from("-1;11").is_ok());
+        assert!("-1;11".parse::<SKU>().is_ok());
     }
     
     #[test]
     fn paint_kit_correct() {
-        assert!(SKU::try_from("16310;15;u703;w2;pk310").is_ok());
+        assert!("16310;15;u703;w2;pk310".parse::<SKU>().is_ok());
     }
 
     #[test]
@@ -570,7 +605,7 @@ mod tests {
     
     #[test]
     fn deserializes_to_json() {
-        let sku = SKU::try_from("16310;15;u703;w2;pk310").unwrap();
+        let sku = "16310;15;u703;w2;pk310".parse::<SKU>().unwrap();
         let s = serde_json::to_string(&Item { sku }).unwrap();
 
         assert_eq!(s, r#"{"sku":"16310;15;u703;w2;pk310"}"#);
@@ -578,16 +613,16 @@ mod tests {
     
     #[test]
     fn to_sku_string_in_arc() {
-        let sku = Arc::new(SKU::try_from("16310;15;u703;w2;pk310").unwrap());
+        let sku = Arc::new("16310;15;u703;w2;pk310".parse::<SKU>().unwrap());
         
         assert_eq!(sku.as_ref().to_sku_string(), "16310;15;u703;w2;pk310");
     }
     
     #[test]
     fn parses_spells_sku() {
-        let sku = SKU::try_from("627;6;footprints-2;voices").unwrap();
+        let sku = "627;6;footprints-2;voices".parse::<SKU>().unwrap();
         
-        assert_eq!(sku.spells, Spells::new([
+        assert_eq!(sku.spells, SpellSet::from([
             Some(Spell::HeadlessHorseshoes),
             Some(Spell::VoicesFromBelow),
         ]));
@@ -595,9 +630,9 @@ mod tests {
     
     #[test]
     fn parses_strange_parts() {
-        let sku = SKU::try_from("627;6;sp-36;sp-37").unwrap();
+        let sku = "627;6;sp-36;sp-37".parse::<SKU>().unwrap();
         
-        assert_eq!(sku.strange_parts, StrangeParts::new([
+        assert_eq!(sku.strange_parts, StrangePartSet::from([
             Some(StrangePart::SappersRemoved),
             Some(StrangePart::CloakedSpiesKilled),
             None,

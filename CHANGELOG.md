@@ -1,8 +1,24 @@
 # Changelog
 
-## 0.4.2 (2024-05-14)
+## 0.5.0 (2024-05-29)
 
 ### Added
+- `InsertError` for errors when inserting to `StrangePartSet` or `SpellSet`.
+- `single` method for `StrangePartSet` and `SpellSet` to create a new collection with a single element.
+- `double` method for `StrangePartSet` and `SpellSet` to create a new collection with two elements.
+- `triple` method for `StrangePartSet` to create a new collection with three elements.
+- `take`, `difference`, `intersection`, `is_disjoint` methods for `StrangePartSet` and `SpellSet`.
+- `TryFrom<String>` and `TryFrom<&String>` for `SKU`.
+
+### Changed
+- `StrangeParts` to `StrangePartSet`.
+- `Spells` to `SpellSet`.
+- `StrangePartSet` and `SpellSet` now return `InsertError` when an insert fails instead of silently ignoring the insert.
+- `StrangePartSet` and `SpellSet` new methods no longer take an argument.
+
+## 0.4.2 (2024-05-14)
+
+### Fixed
 - Minor issue with `parse_enum_u32` in `helpers`.
 
 ## 0.4.1 (2024-02-09)
