@@ -199,7 +199,7 @@ impl StrangePartSet {
             }
         }
         
-        return Err(InsertError::Full);
+        Err(InsertError::Full)
     }
     
     /// Removes a strange part.

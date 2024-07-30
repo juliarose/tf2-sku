@@ -159,7 +159,7 @@ impl SpellSet {
             }
         }
         
-        return Err(InsertError::Full);
+        Err(InsertError::Full)
     }
     
     /// Removes a spell from the set. Returns whether the value was present in the set.
