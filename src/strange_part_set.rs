@@ -14,7 +14,8 @@ const STRANGE_PART_COUNT: usize = 3;
 /// This struct solves the following problems:
 /// - An item can only hold up to 3 strange parts.
 /// - An item cannot have duplicate strange parts.
-/// - Comparing strange parts for equality is order-independent.
+/// - Comparing strange parts for equality is order-agnostic.
+/// - Hashing is order-agnostic.
 /// 
 /// Since the number of strange parts is fixed, the struct uses zero heap allocations and is 
 /// therefore [`Copy`].

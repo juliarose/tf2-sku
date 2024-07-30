@@ -15,6 +15,7 @@ const SPELL_COUNT: usize = 2;
 /// - An item can only hold up to 2 spells.
 /// - An item cannot have duplicate spells.
 /// - Comparing spells for equality is order-independent.
+/// - Hashing is order-agnostic.
 /// 
 /// Since the number of spells is fixed, the struct uses zero heap allocations and is therefore 
 /// [`Copy`].
@@ -455,6 +456,7 @@ pub(crate) fn spell_label(spell: &Spell) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     
     #[test]
     fn spell_set_equals() {
@@ -465,6 +467,21 @@ mod tests {
             Some(Spell::HalloweenFire),
             Some(Spell::Exorcism),
         ]));
+    }
+    
+    #[test]
+    fn spell_set_hashes() {
+        let mut set = HashSet::new();
+        
+        set.insert(SpellSet::from([
+            Some(Spell::Exorcism),
+            Some(Spell::HalloweenFire),
+        ]));
+        
+        assert!(set.contains(&SpellSet::from([
+            Some(Spell::HalloweenFire),
+            Some(Spell::Exorcism),
+        ])));
     }
     
     #[test]
