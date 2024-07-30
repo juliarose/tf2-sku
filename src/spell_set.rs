@@ -144,11 +144,9 @@ impl SpellSet {
     pub fn insert(&mut self, spell: Spell) -> Result<(), InsertError> {
         let attribute_defindex = spell.attribute_defindex();
         
-        for s in self.inner.iter_mut() {
-            if let Some(ss) = s {
-                if ss.attribute_defindex() == attribute_defindex {
-                    return Err(InsertError::Duplicate);
-                }
+        for s in self.inner.iter_mut().flatten() {
+            if s.attribute_defindex() == attribute_defindex {
+                return Err(InsertError::Duplicate);
             }
         }
         
@@ -248,10 +246,10 @@ impl SpellSet {
     pub fn difference(&self, other: &Self) -> Self {
         let mut inner = [None, None];
         
-        for i in 0..=1 {
+        for (i, s_option) in inner.iter_mut().enumerate() {
             if let Some(s) = self.inner[i] {
                 if !other.contains(&s) {
-                    inner[i] = Some(s);
+                    *s_option = Some(s);
                 }
             }
         }
@@ -277,10 +275,10 @@ impl SpellSet {
     pub fn intersection(&self, other: &Self) -> Self {
         let mut inner = [None, None];
         
-        for i in 0..=1 {
+        for (i, s_option) in inner.iter_mut().enumerate() {
             if let Some(s) = self.inner[i] {
                 if other.contains(&s) {
-                    inner[i] = Some(s);
+                    *s_option = Some(s);
                 }
             }
         }

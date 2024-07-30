@@ -294,10 +294,10 @@ impl StrangePartSet {
     pub fn difference(&self, other: &Self) -> Self {
         let mut inner = [None, None, None];
         
-        for i in 0..=2 {
+        for (i, s_option) in inner.iter_mut().enumerate() {
             if let Some(s) = self.inner[i] {
                 if !other.contains(&s) {
-                    inner[i] = Some(s);
+                    *s_option = Some(s);
                 }
             }
         }
@@ -323,10 +323,10 @@ impl StrangePartSet {
     pub fn intersection(&self, other: &Self) -> Self {
         let mut inner = [None, None, None];
         
-        for i in 0..=1 {
+        for (i, s_option) in inner.iter_mut().enumerate() {
             if let Some(s) = self.inner[i] {
                 if other.contains(&s) {
-                    inner[i] = Some(s);
+                    *s_option = Some(s);
                 }
             }
         }
