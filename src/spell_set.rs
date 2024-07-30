@@ -6,6 +6,8 @@ use std::hash::{Hash, Hasher};
 use std::ops::Sub;
 use tf2_enum::Spell;
 
+const SPELL_COUNT: usize = 2;
+
 /// Contains up to 2 spells. Although the underlying data structure is an array, it behaves like a 
 /// set. Most methods mimic that of [`HashSet`](std::collections::HashSet).
 /// 
@@ -44,7 +46,7 @@ use tf2_enum::Spell;
 /// ```
 #[derive(Debug, Default, Clone, Copy, Eq)]
 pub struct SpellSet {
-    inner: [Option<Spell>; 2]
+    inner: [Option<Spell>; SPELL_COUNT]
 }
 
 impl SpellSet {
@@ -150,7 +152,7 @@ impl SpellSet {
             }
         }
         
-        for index in 0..=1usize {
+        for index in 0..SPELL_COUNT {
             if self.inner[index].is_none() {
                 self.inner[index] = Some(spell);
                 return Ok(());
@@ -306,13 +308,13 @@ impl SpellSet {
     }
 }
 
-impl From<[Option<Spell>; 2]> for SpellSet {
-    fn from(inner: [Option<Spell>; 2]) -> Self {
+impl From<[Option<Spell>; SPELL_COUNT]> for SpellSet {
+    fn from(inner: [Option<Spell>; SPELL_COUNT]) -> Self {
         let mut inner = inner;
         
         // remove duplicates
-        for i in 0..=1 {
-            for j in 0..=1 {
+        for i in 0..SPELL_COUNT {
+            for j in 0..SPELL_COUNT {
                 if i == j {
                     continue;
                 }

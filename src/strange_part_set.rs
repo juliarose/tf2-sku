@@ -6,6 +6,8 @@ use std::hash::{Hash, Hasher};
 use std::ops::Sub;
 use tf2_enum::StrangePart;
 
+const STRANGE_PART_COUNT: usize = 3;
+
 /// Contains up to 3 strange parts. Although the underlying data structure is an array, it behaves 
 /// like a set. Most methods mimic that of [`HashSet`](std::collections::HashSet).
 /// 
@@ -48,7 +50,7 @@ use tf2_enum::StrangePart;
 /// ```
 #[derive(Debug, Default, Clone, Copy, Eq)]
 pub struct StrangePartSet {
-    inner: [Option<StrangePart>; 3],
+    inner: [Option<StrangePart>; STRANGE_PART_COUNT],
 }
 
 impl StrangePartSet {
@@ -192,7 +194,7 @@ impl StrangePartSet {
             return Err(InsertError::Duplicate);
         }
         
-        for index in 0..=2usize {
+        for index in 0..STRANGE_PART_COUNT {
             if self.inner[index].is_none() {
                 self.inner[index] = Some(strange_part);
                 return Ok(());
@@ -354,13 +356,13 @@ impl StrangePartSet {
     }
 }
 
-impl From<[Option<StrangePart>; 3]> for StrangePartSet {
-    fn from(inner: [Option<StrangePart>; 3]) -> Self {
+impl From<[Option<StrangePart>; STRANGE_PART_COUNT]> for StrangePartSet {
+    fn from(inner: [Option<StrangePart>; STRANGE_PART_COUNT]) -> Self {
         let mut inner = inner;
         
         // remove duplicates
-        for i in 0..=2 {
-            for j in 0..=2 {
+        for i in 0..STRANGE_PART_COUNT {
+            for j in 0..STRANGE_PART_COUNT {
                 if i == j {
                     continue;
                 }
