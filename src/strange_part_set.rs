@@ -105,7 +105,10 @@ impl StrangePartSet {
     /// 
     /// assert_eq!(strange_parts.len(), 2);
     /// ```
-    pub fn double(strange_part1: StrangePart, strange_part2: StrangePart) -> Self {
+    pub fn double(
+        strange_part1: StrangePart,
+        strange_part2: StrangePart,
+    ) -> Self {
         Self::from([
             Some(strange_part1),
             Some(strange_part2),
@@ -205,9 +208,20 @@ impl StrangePartSet {
     }
     
     /// Removes a strange part.
-    pub fn remove(&mut self, strange_part: StrangePart) -> bool {
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_sku::StrangePartSet;
+    /// use tf2_enum::StrangePart;
+    /// 
+    /// let mut strange_parts = StrangePartSet::single(StrangePart::CriticalKills);
+    /// 
+    /// assert!(strange_parts.remove(&StrangePart::CriticalKills));
+    /// assert!(!strange_parts.contains(&StrangePart::CriticalKills));
+    /// ```
+    pub fn remove(&mut self, strange_part: &StrangePart) -> bool {
         for s in self.inner.iter_mut() {
-            if *s == Some(strange_part) {
+            if *s == Some(*strange_part) {
                 *s = None;
                 return true;
             }
@@ -517,7 +531,7 @@ mod tests {
         assert_eq!(strange_parts.len(), 3);
         assert!(strange_parts.contains(&StrangePart::CriticalKills));
         
-        strange_parts.remove(StrangePart::CriticalKills);
+        strange_parts.remove(&StrangePart::CriticalKills);
         
         assert!(!strange_parts.contains(&StrangePart::CriticalKills));
         assert_eq!(strange_parts.len(), 2);

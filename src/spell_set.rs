@@ -163,6 +163,17 @@ impl SpellSet {
     }
     
     /// Removes a spell from the set. Returns whether the value was present in the set.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_sku::SpellSet;
+    /// use tf2_enum::Spell;
+    /// 
+    /// let mut spells = SpellSet::single(Spell::HeadlessHorseshoes);
+    /// 
+    /// assert!(spells.remove(&Spell::HeadlessHorseshoes));
+    /// assert!(!spells.contains(&Spell::HeadlessHorseshoes));
+    /// ```
     pub fn remove(&mut self, spell: &Spell) -> bool {
         if self.inner[0] == Some(*spell) {
             self.inner[0] = None;
