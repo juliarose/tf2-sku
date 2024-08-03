@@ -14,7 +14,7 @@ const SPELL_COUNT: usize = 2;
 /// This struct solves the following problems:
 /// - An item can only hold up to 2 spells.
 /// - An item cannot have duplicate spells.
-/// - Comparing spells for equality is order-independent.
+/// - Comparing spells for equality is order-agnostic.
 /// - Hashing is order-agnostic.
 /// 
 /// Since the number of spells is fixed, the struct uses zero heap allocations and is therefore 
