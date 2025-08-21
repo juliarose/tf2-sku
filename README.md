@@ -6,7 +6,7 @@ For parsing attributes from SKU strings.
 
 ```rust
 use tf2_sku::SKU;
-use tf2_enum::{Quality, KillstreakTier, Spell, StrangePart};
+use tf2_enum::prelude::*;
 
 let sku = "264;11;kt-1".parse::<SKU>().unwrap();
 

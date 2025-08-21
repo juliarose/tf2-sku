@@ -1,5 +1,18 @@
 # Changelog
 
+### 0.6.0 (2025-08-14)
+
+### Added
+- `BitAnd` for `SpellSet` and `StrangePartSet`, and their borrowed variants.
+- `is_subset` and `is_superset` methods to `StrangePartSet` and `SpellSet`.
+- `impl std::error::Error` for `ParseError`.
+
+### Changed
+- Moved `StrangePartSet` and `SpellSet` into `tf2_enum`.
+- Bumped `tf2-enum` to `^0.11.0`.
+- Faster serialization by using `collect_str`.
+- Failed quality parsing for `SKU::parse_attributes` now defaults to `Quality::Normal`.
+
 ## 0.5.0 (2024-05-29)
 
 ### Added
