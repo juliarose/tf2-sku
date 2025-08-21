@@ -6,7 +6,6 @@ version = "0.6.0"
 rust-version = "1.75.0"
 edition = "2021"
 authors = ["Julia"]
-homepage = "https://github.com/juliarose/tf2-sku"
 repository = "https://github.com/juliarose/tf2-sku"
 license = "MIT"
 keywords = ["tf2", "steam"]
