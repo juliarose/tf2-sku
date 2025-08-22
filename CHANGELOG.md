@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.7.0 (2025-08-21)
+
+- Bump `tf2-enum` to `^0.13.0` to fix a missing re-export issue.
+
 ### 0.6.0 (2025-08-21)
 
 ### Added
